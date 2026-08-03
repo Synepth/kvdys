@@ -2,7 +2,7 @@
 
 KVDYS, kurumsal varlıkların ve destek süreçlerinin uçtan uca yönetilmesini, takip edilmesini ve raporlanmasını sağlayan kurumsal web uygulamasıdır. Proje monorepo mimarisinde geliştirilmektedir.
 
-## Teknoloji Yığını (Tech Stack)
+## Teknolojiler
 
 * **Backend:** Java 17+, Spring Boot 3.x, Maven, PostgreSQL / H2
 * **Frontend:** Angular 18+, SCSS, Bootstrap 5, Bootstrap Icons
