@@ -1,0 +1,15 @@
+<div class="d-flex flex-column vh-100 style-wrapper">
+  <app-navbar></app-navbar>
+
+  <div class="d-flex flex-grow-1 overflow-hidden">
+
+    <div class="bg-light border-end sidebar-container" style="width: 240px; flex-shrink: 0;">
+      <app-sidebar></app-sidebar>
+    </div>
+
+    <main class="flex-grow-1 p-4 overflow-auto bg-body-tertiary">
+      <router-outlet></router-outlet>
+    </main>
+
+  </div>
+</div>

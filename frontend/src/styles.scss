@@ -1,0 +1,16 @@
+/* You can add global styles to this file, and also import other style files */
+@import 'bootstrap/dist/css/bootstrap.min.css';
+@import 'bootstrap-icons/font/bootstrap-icons.css';
+
+/* KVDYS layout helpers */
+html, body, app-root { height: 100%; }
+.sidebar { min-height: calc(100vh - 56px); }
+.main-content { padding-top: 1rem; }
+@media (max-width: 767.98px) {
+  #sidebar { display: none; }
+}
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}

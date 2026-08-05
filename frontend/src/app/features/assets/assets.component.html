@@ -1,0 +1,265 @@
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="fw-bold m-0">Varlık Yönetimi</h4>
+      <small class="text-secondary">Şirket demirbaşlarını, zimmet durumlarını ve konumlarını takip edin</small>
+    </div>
+    <button class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#newAssetModal">
+      <i class="bi bi-plus-lg"></i> Yeni Varlık Ekle
+    </button>
+  </div>
+
+  <!-- Filtre Paneli -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-8">
+          <div class="input-group">
+            <span class="input-group-text bg-white text-secondary border-end-0">
+              <i class="bi bi-search"></i>
+            </span>
+            <input
+              type="text"
+              class="form-control border-start-0 ps-0"
+              placeholder="Barkod, Varlık Adı veya Zimmetli Kişi Ara..."
+              [(ngModel)]="searchTerm">
+          </div>
+        </div>
+        <div class="col-md-4">
+          <select class="form-select" [(ngModel)]="selectedCategory">
+            <option value="Tüm Kategoriler">Tüm Kategoriler</option>
+            <option value="Bilgisayar">Bilgisayar</option>
+            <option value="Çevre Birimi">Çevre Birimi</option>
+            <option value="Donanım">Donanım</option>
+            <option value="İletişim">İletişim</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tablo -->
+  <div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+        <tr>
+          <th>Barkod</th>
+          <th>Varlık Adı</th>
+          <th>Kategori</th>
+          <th>Zimmetli Kişi</th>
+          <th>Kayıt Tarihi</th>
+          <th>Durum</th>
+          <th class="text-end pe-4">İşlemler</th>
+        </tr>
+        </thead>
+        <tbody>
+          @for (asset of filteredAssets; track asset.barcode) {
+            <tr>
+              <td class="fw-semibold text-primary">{{ asset.barcode }}</td>
+              <td class="fw-medium">{{ asset.name }}</td>
+              <td><span class="badge bg-light text-dark border">{{ asset.category }}</span></td>
+              <td>{{ asset.assignedTo }}</td>
+              <td class="text-secondary small">{{ asset.date }}</td>
+              <td>
+                <span class="badge {{ getStatusBadgeClass(asset.status) }}">
+                  {{ asset.status }}
+                </span>
+              </td>
+              <td class="text-end pe-3">
+                <div class="btn-group btn-group-sm">
+                  <button class="btn btn-outline-secondary" (click)="openDetailModal(asset)" data-bs-toggle="modal" data-bs-target="#detailAssetModal" title="Detay Göster">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <button class="btn btn-outline-primary" (click)="openEditModal(asset)" data-bs-toggle="modal" data-bs-target="#editAssetModal" title="Düzenle">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button class="btn btn-outline-danger" (click)="deleteAsset(asset.barcode)" title="Sil">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7" class="text-center py-4 text-muted">
+                Kritere uygun varlık bulunamadı.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 1: Yeni Varlık Ekleme -->
+<div class="modal fade" id="newAssetModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">Yeni Varlık Ekle</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="createAsset()">
+          <div class="row g-3 mb-3">
+            <div class="col-md-5">
+              <label class="form-label fw-semibold">Barkod No</label>
+              <input type="text" class="form-control" [(ngModel)]="newAsset.barcode" name="barcode" placeholder="Örn: BR-005" required>
+            </div>
+            <div class="col-md-7">
+              <label class="form-label fw-semibold">Varlık Adı</label>
+              <input type="text" class="form-control" [(ngModel)]="newAsset.name" name="name" placeholder="Örn: MacBook Pro 16" required>
+            </div>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Kategori</label>
+              <select class="form-select" [(ngModel)]="newAsset.category" name="category">
+                <option value="Bilgisayar">Bilgisayar</option>
+                <option value="Çevre Birimi">Çevre Birimi</option>
+                <option value="Donanım">Donanım</option>
+                <option value="İletişim">İletişim</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Durum</label>
+              <select class="form-select" [(ngModel)]="newAsset.status" name="status">
+                <option value="Aktif">Aktif</option>
+                <option value="Bakımda">Bakımda</option>
+                <option value="Pasif">Pasif</option>
+              </select>
+            </div>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Zimmetli Kişi</label>
+              <input type="text" class="form-control" [(ngModel)]="newAsset.assignedTo" name="assignedTo" placeholder="Örn: Ahmet Yılmaz">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Konum / Lokasyon</label>
+              <input type="text" class="form-control" [(ngModel)]="newAsset.location" name="location" placeholder="Örn: Merkez Ofis Kat 2">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Açıklama / Özellikler</label>
+            <textarea class="form-control" rows="3" [(ngModel)]="newAsset.description" name="description" placeholder="Donanım detayları, seri numarası vb."></textarea>
+          </div>
+          <div class="modal-footer px-0 pb-0 pt-3">
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
+            <button type="submit" class="btn btn-primary" data-bs-dismiss="modal" [disabled]="!newAsset.barcode || !newAsset.name">
+              Varlığı Kaydet
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 2: Detay Göster -->
+<div class="modal fade" id="detailAssetModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow" *ngIf="selectedAsset">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">Varlık Detayı ({{ selectedAsset.barcode }})</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <small class="text-secondary d-block">Varlık Adı</small>
+          <span class="fw-bold fs-6">{{ selectedAsset.name }}</span>
+        </div>
+        <div class="row mb-3">
+          <div class="col-6">
+            <small class="text-secondary d-block">Zimmetli Kişi</small>
+            <span class="fw-semibold">{{ selectedAsset.assignedTo || 'Atanmadı' }}</span>
+          </div>
+          <div class="col-6">
+            <small class="text-secondary d-block">Kategori</small>
+            <span class="badge bg-light text-dark border">{{ selectedAsset.category }}</span>
+          </div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-6">
+            <small class="text-secondary d-block">Konum / Lokasyon</small>
+            <span>{{ selectedAsset.location || '-' }}</span>
+          </div>
+          <div class="col-6">
+            <small class="text-secondary d-block">Kayıt Tarihi</small>
+            <span>{{ selectedAsset.date }}</span>
+          </div>
+        </div>
+        <div class="mb-3">
+          <small class="text-secondary d-block">Durum</small>
+          <span class="badge {{ getStatusBadgeClass(selectedAsset.status) }}">{{ selectedAsset.status }}</span>
+        </div>
+        <div class="mb-2">
+          <small class="text-secondary d-block">Açıklama / Özellikler</small>
+          <p class="p-2 bg-light rounded text-muted mb-0 small">{{ selectedAsset.description || 'Açıklama girilmemiş.' }}</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 3: Düzenle -->
+<div class="modal fade" id="editAssetModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">Varlığı Düzenle ({{ editAssetModel.barcode }})</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="updateAsset()">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Varlık Adı</label>
+            <input type="text" class="form-control" [(ngModel)]="editAssetModel.name" name="editName" required>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Kategori</label>
+              <select class="form-select" [(ngModel)]="editAssetModel.category" name="editCategory">
+                <option value="Bilgisayar">Bilgisayar</option>
+                <option value="Çevre Birimi">Çevre Birimi</option>
+                <option value="Donanım">Donanım</option>
+                <option value="İletişim">İletişim</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Durum</label>
+              <select class="form-select" [(ngModel)]="editAssetModel.status" name="editStatus">
+                <option value="Aktif">Aktif</option>
+                <option value="Bakımda">Bakımda</option>
+                <option value="Pasif">Pasif</option>
+              </select>
+            </div>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Zimmetli Kişi</label>
+              <input type="text" class="form-control" [(ngModel)]="editAssetModel.assignedTo" name="editAssignedTo">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Konum / Lokasyon</label>
+              <input type="text" class="form-control" [(ngModel)]="editAssetModel.location" name="editLocation">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Açıklama / Özellikler</label>
+            <textarea class="form-control" rows="3" [(ngModel)]="editAssetModel.description" name="editDescription"></textarea>
+          </div>
+          <div class="modal-footer px-0 pb-0 pt-3">
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
+            <button type="submit" class="btn btn-primary" data-bs-dismiss="modal">Değişiklikleri Kaydet</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
