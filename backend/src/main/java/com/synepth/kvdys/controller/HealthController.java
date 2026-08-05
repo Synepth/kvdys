@@ -16,7 +16,7 @@ public class HealthController {
     public Map<String, String> checkHealth() {
         Map<String, String> response = new HashMap<>();
         response.put("status", "UP");
-        response.put("message", "KVDYS Aktif");
+        response.put("message", "KVDYS Active");
         return response;
     }
 }

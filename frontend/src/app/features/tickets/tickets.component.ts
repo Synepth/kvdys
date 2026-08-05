@@ -7,8 +7,8 @@ interface Ticket {
   title: string;
   requestedBy: string;
   category: string;
-  priority: 'Düşük' | 'Orta' | 'Yüksek';
-  status: 'Açık' | 'İnceleniyor' | 'Çözüldü' | 'İptal';
+  priority: 'Low' | 'Medium' | 'High';
+  status: 'Open' | 'In Review' | 'Resolved' | 'Cancelled';
   createdDate: string;
   description?: string;
 }
@@ -28,17 +28,17 @@ export class TicketsComponent {
 
   newTicket: Partial<Ticket> = {
     title: '',
-    category: 'Donanım',
-    priority: 'Orta',
+    category: 'Hardware',
+    priority: 'Medium',
     requestedBy: '',
     description: ''
   };
 
   tickets: Ticket[] = [
-    { id: 'TCK-101', title: 'Monitör ekrana görüntü gelmiyor', requestedBy: 'Ahmet Yılmaz', category: 'Donanım', priority: 'Yüksek', status: 'Açık', createdDate: '2026-08-01', description: 'Monitörün güç ışığı yanıyor ancak görüntü tamamen siyah.' },
-    { id: 'TCK-102', title: 'VPN bağlantı hatası', requestedBy: 'Elif Kaya', category: 'Ağ / İnternet', priority: 'Orta', status: 'İnceleniyor', createdDate: '2026-08-02', description: 'Evden bağlanırken sunucu zaman aşımı hatası alınıyor.' },
-    { id: 'TCK-103', title: 'Excel lisans aktarımı', requestedBy: 'Mehmet Demir', category: 'Yazılım', priority: 'Düşük', status: 'Çözüldü', createdDate: '2026-08-03', description: 'Yeni bilgisayara Office aktivasyonu tanımlandı.' },
-    { id: 'TCK-104', title: 'Klavye tuş takılması', requestedBy: 'Ayşe Şahin', category: 'Donanım', priority: 'Düşük', status: 'Açık', createdDate: '2026-08-04', description: 'Space ve Enter tuşları basılı kalıyor.' }
+    { id: 'TCK-101', title: 'Monitor not displaying anything', requestedBy: 'Ahmet Yılmaz', category: 'Hardware', priority: 'High', status: 'Open', createdDate: '2026-08-01', description: 'The monitor power light is on but the screen is completely black.' },
+    { id: 'TCK-102', title: 'VPN connection error', requestedBy: 'Elif Kaya', category: 'Network / Internet', priority: 'Medium', status: 'In Review', createdDate: '2026-08-02', description: 'A server timeout error occurs when connecting from home.' },
+    { id: 'TCK-103', title: 'Excel license transfer', requestedBy: 'Mehmet Demir', category: 'Software', priority: 'Low', status: 'Resolved', createdDate: '2026-08-03', description: 'Office activation was assigned to the new computer.' },
+    { id: 'TCK-104', title: 'Keyboard key sticking', requestedBy: 'Ayşe Şahin', category: 'Hardware', priority: 'Low', status: 'Open', createdDate: '2026-08-04', description: 'The Space and Enter keys are sticking.' }
   ];
 
   get filteredTickets(): Ticket[] {
@@ -58,15 +58,15 @@ export class TicketsComponent {
       id: `TCK-${Math.floor(100 + Math.random() * 900)}`,
       title: this.newTicket.title,
       requestedBy: this.newTicket.requestedBy,
-      category: this.newTicket.category || 'Genel',
-      priority: (this.newTicket.priority as 'Düşük' | 'Orta' | 'Yüksek') || 'Orta',
-      status: 'Açık',
+      category: this.newTicket.category || 'General',
+      priority: (this.newTicket.priority as 'Low' | 'Medium' | 'High') || 'Medium',
+      status: 'Open',
       createdDate: new Date().toISOString().split('T')[0],
       description: this.newTicket.description || ''
     };
 
     this.tickets.unshift(created);
-    this.newTicket = { title: '', category: 'Donanım', priority: 'Orta', requestedBy: '', description: '' };
+    this.newTicket = { title: '', category: 'Hardware', priority: 'Medium', requestedBy: '', description: '' };
   }
 
   openDetailModal(ticket: Ticket): void {
@@ -85,7 +85,7 @@ export class TicketsComponent {
   }
 
   deleteTicket(id: string): void {
-    if (confirm('Bu destek talebini silmek istediğinize emin misiniz?')) {
+    if (confirm('Are you sure you want to delete this support request?')) {
       this.tickets = this.tickets.filter(t => t.id !== id);
     }
   }
@@ -95,9 +95,9 @@ export class TicketsComponent {
       id: '',
       title: '',
       requestedBy: '',
-      category: 'Donanım',
-      priority: 'Orta',
-      status: 'Açık',
+      category: 'Hardware',
+      priority: 'Medium',
+      status: 'Open',
       createdDate: '',
       description: ''
     };
@@ -105,19 +105,19 @@ export class TicketsComponent {
 
   getPriorityBadgeClass(priority: string): string {
     switch (priority) {
-      case 'Yüksek': return 'bg-danger-subtle text-danger border border-danger-subtle';
-      case 'Orta': return 'bg-warning-subtle text-warning-emphasis border border-warning-subtle';
-      case 'Düşük': return 'bg-info-subtle text-info border border-info-subtle';
+      case 'High': return 'bg-danger-subtle text-danger border border-danger-subtle';
+      case 'Medium': return 'bg-warning-subtle text-warning-emphasis border border-warning-subtle';
+      case 'Low': return 'bg-info-subtle text-info border border-info-subtle';
       default: return 'bg-secondary-subtle text-secondary';
     }
   }
 
   getStatusBadgeClass(status: string): string {
     switch (status) {
-      case 'Açık': return 'bg-primary-subtle text-primary border border-primary-subtle';
-      case 'İnceleniyor': return 'bg-info-subtle text-info-emphasis border border-info-subtle';
-      case 'Çözüldü': return 'bg-success-subtle text-success border border-success-subtle';
-      case 'İptal': return 'bg-secondary-subtle text-secondary border border-secondary-subtle';
+      case 'Open': return 'bg-primary-subtle text-primary border border-primary-subtle';
+      case 'In Review': return 'bg-info-subtle text-info-emphasis border border-info-subtle';
+      case 'Resolved': return 'bg-success-subtle text-success border border-success-subtle';
+      case 'Cancelled': return 'bg-secondary-subtle text-secondary border border-secondary-subtle';
       default: return 'bg-light text-dark';
     }
   }

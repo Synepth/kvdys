@@ -1,23 +1,36 @@
-# KVDYS - Kurumsal Varlık ve Destek Yönetim Sistemi
+# KVDYS - Corporate Asset and Support Management System
 
-KVDYS, kurumsal varlıkların ve destek süreçlerinin uçtan uca yönetilmesini, takip edilmesini ve raporlanmasını sağlayan kurumsal web uygulamasıdır. Proje monorepo mimarisinde geliştirilmektedir.
+KVDYS is an enterprise web application that enables end-to-end management, tracking, and reporting of corporate assets and support processes. The project is developed as a monorepo.
 
-## Teknolojiler
+## Technologies
 
 * **Backend:** Java 17+, Spring Boot 3.x, Maven, PostgreSQL / H2
 * **Frontend:** Angular 18+, SCSS, Bootstrap 5, Bootstrap Icons
-* **Mimari:** Monorepo (Single Repository)
+* **Architecture:** Monorepo (Single Repository)
 
 ---
 
-## Proje Yapısı
+## Project Structure
 
 ```text
 kvdys/
-├── backend/            # Java Spring Boot REST API uygulaması
+├── backend/                  # Spring Boot REST API
 │   ├── src/
-│   └── pom.xml
-├── frontend/           # Angular Single Page Application (SPA)
+│   │   ├── main/
+│   │   │   ├── java/com/synepth/kvdys/
+│   │   │   └── resources/
+│   │   └── test/
+│   ├── pom.xml
+│   └── mvnw
+├── frontend/                 # Angular single-page application
 │   ├── src/
-│   └── package.json
+│   │   ├── app/
+│   │   │   ├── dashboard/
+│   │   │   ├── features/
+│   │   │   └── shared/
+│   │   └── assets/
+│   ├── angular.json
+│   ├── package.json
+│   └── tsconfig.json
 └── README.md
+```

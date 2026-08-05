@@ -8,7 +8,7 @@ interface Asset {
   category: string;
   assignedTo: string;
   date: string;
-  status: 'Aktif' | 'Bakımda' | 'Pasif';
+  status: 'Active' | 'Under Maintenance' | 'Inactive';
   description?: string;
   location?: string;
 }
@@ -21,7 +21,7 @@ interface Asset {
 })
 export class AssetsComponent {
   searchTerm = '';
-  selectedCategory = 'Tüm Kategoriler';
+  selectedCategory = 'All Categories';
 
   selectedAsset: Asset | null = null;
   editAssetModel: Asset = this.getEmptyAsset();
@@ -29,18 +29,18 @@ export class AssetsComponent {
   newAsset: Partial<Asset> = {
     barcode: '',
     name: '',
-    category: 'Bilgisayar',
+    category: 'Computer',
     assignedTo: '',
-    status: 'Aktif',
-    location: 'Merkez Ofis',
+    status: 'Active',
+    location: 'Main Office',
     description: ''
   };
 
   assets: Asset[] = [
-    { barcode: 'BR-001', name: 'MacBook Pro 16"', category: 'Bilgisayar', assignedTo: 'Ahmet Yıldız', date: '2026-05-10', status: 'Aktif', location: 'Yazılım Departmanı', description: 'M2 Max İşlemci, 32GB RAM' },
-    { barcode: 'BR-002', name: 'HP LaserJet Yazıcı', category: 'Çevre Birimi', assignedTo: 'Mehmet Kaya', date: '2026-01-15', status: 'Bakımda', location: 'İnsan Kaynakları', description: 'Toner değişimi ve bakımı bekleniyor.' },
-    { barcode: 'BR-003', name: 'Dell 27" 4K Monitör', category: 'Donanım', assignedTo: 'Nilay Demir', date: '2026-03-22', status: 'Aktif', location: 'Tasarım Ekibi', description: 'USB-C Hub özellikli monitör.' },
-    { barcode: 'BR-004', name: 'Cisco IP Telefon', category: 'İletişim', assignedTo: 'Ayşe Acar', date: '2026-02-18', status: 'Pasif', location: 'Depo', description: 'Yedek cihaz olarak depoda duruyor.' }
+    { barcode: 'BR-001', name: 'MacBook Pro 16"', category: 'Computer', assignedTo: 'Ahmet Yıldız', date: '2026-05-10', status: 'Active', location: 'Software Department', description: 'M2 Max processor, 32GB RAM' },
+    { barcode: 'BR-002', name: 'HP LaserJet Printer', category: 'Peripheral', assignedTo: 'Mehmet Kaya', date: '2026-01-15', status: 'Under Maintenance', location: 'Human Resources', description: 'Waiting for toner replacement and maintenance.' },
+    { barcode: 'BR-003', name: 'Dell 27" 4K Monitor', category: 'Hardware', assignedTo: 'Nilay Demir', date: '2026-03-22', status: 'Active', location: 'Design Team', description: 'Monitor with USB-C hub.' },
+    { barcode: 'BR-004', name: 'Cisco IP Phone', category: 'Communication', assignedTo: 'Ayşe Acar', date: '2026-02-18', status: 'Inactive', location: 'Warehouse', description: 'Stored as a backup device.' }
   ];
 
   get filteredAssets(): Asset[] {
@@ -49,7 +49,7 @@ export class AssetsComponent {
         asset.barcode.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
         asset.assignedTo.toLowerCase().includes(this.searchTerm.toLowerCase());
 
-      const matchesCategory = this.selectedCategory === 'Tüm Kategoriler' || asset.category === this.selectedCategory;
+      const matchesCategory = this.selectedCategory === 'All Categories' || asset.category === this.selectedCategory;
 
       return matchesSearch && matchesCategory;
     });
@@ -61,16 +61,16 @@ export class AssetsComponent {
     const created: Asset = {
       barcode: this.newAsset.barcode,
       name: this.newAsset.name,
-      category: this.newAsset.category || 'Bilgisayar',
-      assignedTo: this.newAsset.assignedTo || 'Atanmadı',
+      category: this.newAsset.category || 'Computer',
+      assignedTo: this.newAsset.assignedTo || 'Unassigned',
       date: new Date().toISOString().split('T')[0],
-      status: (this.newAsset.status as 'Aktif' | 'Bakımda' | 'Pasif') || 'Aktif',
-      location: this.newAsset.location || 'Depo',
+      status: (this.newAsset.status as 'Active' | 'Under Maintenance' | 'Inactive') || 'Active',
+      location: this.newAsset.location || 'Warehouse',
       description: this.newAsset.description || ''
     };
 
     this.assets.unshift(created);
-    this.newAsset = { barcode: '', name: '', category: 'Bilgisayar', assignedTo: '', status: 'Aktif', location: 'Merkez Ofis', description: '' };
+    this.newAsset = { barcode: '', name: '', category: 'Computer', assignedTo: '', status: 'Active', location: 'Main Office', description: '' };
   }
 
   openDetailModal(asset: Asset): void {
@@ -89,7 +89,7 @@ export class AssetsComponent {
   }
 
   deleteAsset(barcode: string): void {
-    if (confirm(`${barcode} barkodlu varlığı silmek istediğinize emin misiniz?`)) {
+    if (confirm(`${barcode} asset will be deleted. Are you sure?`)) {
       this.assets = this.assets.filter(a => a.barcode !== barcode);
     }
   }
@@ -98,10 +98,10 @@ export class AssetsComponent {
     return {
       barcode: '',
       name: '',
-      category: 'Bilgisayar',
+      category: 'Computer',
       assignedTo: '',
       date: '',
-      status: 'Aktif',
+      status: 'Active',
       location: '',
       description: ''
     };
@@ -109,9 +109,9 @@ export class AssetsComponent {
 
   getStatusBadgeClass(status: string): string {
     switch (status) {
-      case 'Aktif': return 'bg-success-subtle text-success border border-success-subtle';
-      case 'Bakımda': return 'bg-warning-subtle text-warning-emphasis border border-warning-subtle';
-      case 'Pasif': return 'bg-secondary-subtle text-secondary border border-secondary-subtle';
+      case 'Active': return 'bg-success-subtle text-success border border-success-subtle';
+      case 'Under Maintenance': return 'bg-warning-subtle text-warning-emphasis border border-warning-subtle';
+      case 'Inactive': return 'bg-secondary-subtle text-secondary border border-secondary-subtle';
       default: return 'bg-light text-dark';
     }
   }

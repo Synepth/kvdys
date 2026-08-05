@@ -18,9 +18,9 @@ interface AppNotification {
 })
 export class NavbarComponent {
   notifications: AppNotification[] = [
-    { id: 1, title: 'Yeni Talep', message: 'TCK-105: Monitör arızası kaydı açıldı.', time: '5 dk önce', isRead: false, type: 'ticket' },
-    { id: 2, title: 'Zimmet Güncellemesi', message: 'BR-001 MacBook Pro üzerinize atandı.', time: '1 saat önce', isRead: false, type: 'asset' },
-    { id: 3, title: 'Durum Değişti', message: 'TCK-102 talebi Çözüldü olarak işaretlendi.', time: '3 saat önce', isRead: true, type: 'ticket' }
+    { id: 1, title: 'New Request', message: 'TCK-105: A monitor issue record was created.', time: '5 minutes ago', isRead: false, type: 'ticket' },
+    { id: 2, title: 'Assignment Updated', message: 'BR-001 MacBook Pro was assigned to you.', time: '1 hour ago', isRead: false, type: 'asset' },
+    { id: 3, title: 'Status Changed', message: 'Request TCK-102 was marked as Resolved.', time: '3 hours ago', isRead: true, type: 'ticket' }
   ];
 
   get unreadCount(): number {
