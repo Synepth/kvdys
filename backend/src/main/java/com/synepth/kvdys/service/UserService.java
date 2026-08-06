@@ -2,6 +2,7 @@ package com.synepth.kvdys.service;
 
 import com.synepth.kvdys.dto.UserCreateRequest;
 import com.synepth.kvdys.dto.UserResponse;
+import com.synepth.kvdys.dto.UserUpdateRequest;
 import com.synepth.kvdys.entity.Department;
 import com.synepth.kvdys.entity.Role;
 import com.synepth.kvdys.entity.User;
@@ -25,13 +26,8 @@ public class UserService {
     private final RoleRepository roleRepository;
 
     public UserResponse createUser(UserCreateRequest request) {
-        Department department = departmentRepository.findById(request.getDepartmentId())
-                .orElseThrow(() -> new RuntimeException("Department not found: " + request.getDepartmentId()));
-
-        Set<Role> roles = new HashSet<>();
-        if (request.getRoleIds() != null && !request.getRoleIds().isEmpty()) {
-            roles.addAll(roleRepository.findAllById(request.getRoleIds()));
-        }
+        Department department = getDepartmentById(request.getDepartmentId());
+        Set<Role> roles = getRolesByIds(request.getRoleIds());
 
         User user = new User();
         user.setUsername(request.getUsername());
@@ -51,6 +47,42 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
+    public UserResponse updateUser(Long id, UserUpdateRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+
+        Department department = getDepartmentById(request.getDepartmentId());
+        Set<Role> roles = getRolesByIds(request.getRoleIds());
+
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+        user.setDepartment(department);
+        user.setRoles(roles);
+
+        User updatedUser = userRepository.save(user);
+        return mapToResponse(updatedUser);
+    }
+
+    public void deleteUser(Long id) {
+        if (!userRepository.existsById(id)) {
+            throw new RuntimeException("User not found with id: " + id);
+        }
+        userRepository.deleteById(id);
+    }
+
+    private Department getDepartmentById(Long departmentId) {
+        return departmentRepository.findById(departmentId)
+                .orElseThrow(() -> new RuntimeException("Department not found: " + departmentId));
+    }
+
+    private Set<Role> getRolesByIds(Set<Long> roleIds) {
+        Set<Role> roles = new HashSet<>();
+        if (roleIds != null && !roleIds.isEmpty()) {
+            roles.addAll(roleRepository.findAllById(roleIds));
+        }
+        return roles;
+    }
+
     private UserResponse mapToResponse(User user) {
         UserResponse response = new UserResponse();
         response.setId(user.getId());
@@ -60,7 +92,9 @@ public class UserService {
             response.setDepartmentName(user.getDepartment().getName());
         }
         if (user.getRoles() != null) {
-            response.setRoles(user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()));
+            response.setRoles(user.getRoles().stream()
+                    .map(Role::getName)
+                    .collect(Collectors.toSet()));
         }
         return response;
     }

@@ -1,0 +1,28 @@
+<div class="container mt-4">
+  <h2>Users</h2>
+
+  <table class="table">
+    <thead>
+    <tr>
+      <th>ID</th>
+      <th>Username</th>
+      <th>E-Mail</th>
+      <th>Roles</th>
+    </tr>
+    </thead>
+    <tbody>
+      @for (user of users; track user.id) {
+        <tr>
+          <td>{{ user.id }}</td>
+          <td>{{ user.username || 'N/A' }}</td>
+          <td>{{ user.email }}</td>
+          <td>{{ user.departmentName || 'N/A' }}</td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="4" class="text-center">There is no user data yet or list is empty.</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
