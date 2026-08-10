@@ -4,7 +4,7 @@ KVDYS is an enterprise web application for managing corporate assets and support
 
 ## Technologies
 
-* **Backend:** Java 17+, Spring Boot 4.x, Maven, PostgreSQL / H2
+* **Backend:** Java 17+, Spring Boot 4.x, Maven, PostgreSQL
 * **Frontend:** Angular 22+, SCSS, Bootstrap 5, Bootstrap Icons
 * **Architecture:** Monorepo (Single Repository)
 
