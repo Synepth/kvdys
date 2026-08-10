@@ -26,6 +26,15 @@ public class UserService {
     private final RoleRepository roleRepository;
 
     public UserResponse createUser(UserCreateRequest request) {
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new RuntimeException("This username is already taken.");
+        }
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("This email is already in use.");
+        }
+        if (request.getPassword() == null || request.getPassword().length() < 6) {
+            throw new RuntimeException("Password must be at least 6 characters long.");
+        }
         Department department = getDepartmentById(request.getDepartmentId());
         Set<Role> roles = getRolesByIds(request.getRoleIds());
 
@@ -38,10 +47,11 @@ public class UserService {
 
         User savedUser = userRepository.save(user);
         return mapToResponse(savedUser);
+
     }
 
     public List<UserResponse> getAllUsers() {
-        return userRepository.findAll()
+        return userRepository.findAllByOrderByIdAsc()
                 .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -98,4 +108,5 @@ public class UserService {
         }
         return response;
     }
+
 }

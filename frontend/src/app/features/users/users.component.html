@@ -1,28 +1,148 @@
-<div class="container mt-4">
-  <h2>Users</h2>
+<div class="container-fluid p-4">
 
-  <table class="table">
-    <thead>
-    <tr>
-      <th>ID</th>
-      <th>Username</th>
-      <th>E-Mail</th>
-      <th>Roles</th>
-    </tr>
-    </thead>
-    <tbody>
-      @for (user of users; track user.id) {
-        <tr>
-          <td>{{ user.id }}</td>
-          <td>{{ user.username || 'N/A' }}</td>
-          <td>{{ user.email }}</td>
-          <td>{{ user.departmentName || 'N/A' }}</td>
-        </tr>
-      } @empty {
-        <tr>
-          <td colspan="4" class="text-center">There is no user data yet or list is empty.</td>
-        </tr>
-      }
-    </tbody>
-  </table>
+  <!-- Header & Add Button -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold m-0">User Management</h2>
+    <button
+      type="button"
+      class="btn btn-primary"
+      data-bs-toggle="modal"
+      data-bs-target="#userModal"
+      (click)="openCreateModal()">
+      + Add New User
+    </button>
+  </div>
+
+  <!-- Users Table -->
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle m-0">
+          <thead class="table-dark">
+          <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Department</th>
+            <th>Roles</th>
+            <th class="text-center">Actions</th>
+          </tr>
+          </thead>
+          <tbody>
+            @for (user of users; track user.id) {
+              <tr>
+                <td>{{ user.id }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.departmentName || '-' }}</td>
+                <td>
+                  @for (role of user.roles; track role) {
+                    <span class="badge bg-secondary me-1">{{ role }}</span>
+                  }
+                </td>
+                <td class="text-center">
+                  <button
+                    class="btn btn-sm btn-outline-warning me-2"
+                    data-bs-toggle="modal"
+                    data-bs-target="#userModal"
+                    (click)="openEditModal(user)">
+                    Edit
+                  </button>
+                  <button
+                    class="btn btn-sm btn-outline-danger"
+                    (click)="deleteUser(user.id)">
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="text-center py-4 text-muted">
+                  No users found.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- User Add / Edit Modal -->
+<div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="userModalLabel">
+          {{ isEditMode ? 'Edit User' : 'Add New User' }}
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <form [formGroup]="userForm" (ngSubmit)="onSubmit()">
+        <div class="modal-body">
+
+          <!-- Error Alert -->
+          @if (errorMessage) {
+            <div class="alert alert-danger py-2 mb-3" role="alert">
+              {{ errorMessage }}
+            </div>
+          }
+
+          <!-- Username Input -->
+          <div class="mb-3">
+            <label class="form-label">Username</label>
+            <input type="text" class="form-control" formControlName="username" />
+          </div>
+
+          <!-- Email Input -->
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" formControlName="email" />
+          </div>
+
+          <!-- Password Input (Only visible on Create Mode) -->
+          @if (!isEditMode) {
+            <div class="mb-3">
+              <label class="form-label">Password</label>
+              <input type="password" class="form-control" formControlName="password" />
+            </div>
+          }
+
+          <!-- Department Select Dropdown -->
+          <div class="mb-3">
+            <label class="form-label">Department</label>
+            <select class="form-select" formControlName="departmentId">
+              <option [ngValue]="null" disabled>Select Department</option>
+              @for (dept of departments; track dept.id) {
+                <option [ngValue]="dept.id">{{ dept.name }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Role Select Dropdown -->
+          <div class="mb-3">
+            <label class="form-label">Role</label>
+            <select class="form-select" formControlName="roleId">
+              @for (role of availableRoles; track role.id) {
+                <option [ngValue]="role.id">{{ role.name }}</option>
+              }
+            </select>
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary" [disabled]="userForm.invalid">
+            {{ isEditMode ? 'Update' : 'Save' }}
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
 </div>

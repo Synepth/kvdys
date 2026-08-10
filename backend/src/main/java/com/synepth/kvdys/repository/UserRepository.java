@@ -10,7 +10,14 @@ import java.util.List;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
+    boolean existsByEmail(String email);
+    boolean existsByUsername(String username);
+
     @Override
     @EntityGraph(attributePaths = {"department", "roles"})
     List<User> findAll();
+
+    @EntityGraph(attributePaths = {"department", "roles"})
+    List<User> findAllByOrderByIdAsc();
+
 }
