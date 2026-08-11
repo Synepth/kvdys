@@ -1,17 +1,8 @@
-﻿import { Component } from '@angular/core';
+﻿import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-
-interface Asset {
-  barcode: string;
-  name: string;
-  category: string;
-  assignedTo: string;
-  date: string;
-  status: 'Aktif' | 'Bakımda' | 'Pasif';
-  description?: string;
-  location?: string;
-}
+import { AssetCreateRequest, AssetResponse } from '../../models/asset';
+import { AssetService } from '../../core/services/asset.service';
 
 @Component({
   selector: 'app-assets',
@@ -19,100 +10,120 @@ interface Asset {
   imports: [CommonModule, FormsModule],
   templateUrl: './assets.component.html'
 })
-export class AssetsComponent {
+export class AssetsComponent implements OnInit {
   searchTerm = '';
-  selectedCategory = 'Tüm Kategoriler';
+  selectedCategory = 'All Categories';
 
-  selectedAsset: Asset | null = null;
-  editAssetModel: Asset = this.getEmptyAsset();
+  assets: AssetResponse[] = [];
+  selectedAsset: AssetResponse | null = null;
 
-  newAsset: Partial<Asset> = {
-    barcode: '',
-    name: '',
-    category: 'Bilgisayar',
-    assignedTo: '',
-    status: 'Aktif',
-    location: 'Merkez Ofis',
-    description: ''
-  };
+  editAssetModel: AssetCreateRequest = this.getEmptyAssetRequest();
+  editAssetId: number | null = null;
 
-  assets: Asset[] = [
-    { barcode: 'BR-001', name: 'MacBook Pro 16"', category: 'Bilgisayar', assignedTo: 'Ahmet Yıldız', date: '2026-05-10', status: 'Aktif', location: 'Yazılım Departmanı', description: 'M2 Max İşlemci, 32GB RAM' },
-    { barcode: 'BR-002', name: 'HP LaserJet Yazıcı', category: 'Çevre Birimi', assignedTo: 'Mehmet Kaya', date: '2026-01-15', status: 'Bakımda', location: 'İnsan Kaynakları', description: 'Toner değişimi ve bakımı bekleniyor.' },
-    { barcode: 'BR-003', name: 'Dell 27" 4K Monitör', category: 'Donanım', assignedTo: 'Nilay Demir', date: '2026-03-22', status: 'Aktif', location: 'Tasarım Ekibi', description: 'USB-C Hub özellikli monitör.' },
-    { barcode: 'BR-004', name: 'Cisco IP Telefon', category: 'İletişim', assignedTo: 'Ayşe Acar', date: '2026-02-18', status: 'Pasif', location: 'Depo', description: 'Yedek cihaz olarak depoda duruyor.' }
-  ];
+  newAsset: AssetCreateRequest = this.getEmptyAssetRequest();
 
-  get filteredAssets(): Asset[] {
+  constructor(private assetService: AssetService) {}
+
+  ngOnInit(): void {
+    this.loadAssets();
+  }
+
+  loadAssets(): void {
+    this.assetService.getAllAssets().subscribe({
+      next: (data) => {
+        this.assets = data;
+      },
+      error: (err) => console.error('Error loading assets:', err)
+    });
+  }
+
+  get filteredAssets(): AssetResponse[] {
     return this.assets.filter(asset => {
-      const matchesSearch = asset.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        asset.barcode.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        asset.assignedTo.toLowerCase().includes(this.searchTerm.toLowerCase());
+      const matchesSearch =
+        (asset.name?.toLowerCase() || '').includes(this.searchTerm.toLowerCase()) ||
+        (asset.serialNumber?.toLowerCase() || '').includes(this.searchTerm.toLowerCase()) ||
+        (asset.assignedUsername?.toLowerCase() || '').includes(this.searchTerm.toLowerCase());
 
-      const matchesCategory = this.selectedCategory === 'Tüm Kategoriler' || asset.category === this.selectedCategory;
+      const matchesCategory = this.selectedCategory === 'All Categories' || asset.type === this.selectedCategory;
 
       return matchesSearch && matchesCategory;
     });
   }
 
   createAsset(): void {
-    if (!this.newAsset.barcode || !this.newAsset.name) return;
+    if (!this.newAsset.serialNumber || !this.newAsset.name) return;
 
-    const created: Asset = {
-      barcode: this.newAsset.barcode,
-      name: this.newAsset.name,
-      category: this.newAsset.category || 'Bilgisayar',
-      assignedTo: this.newAsset.assignedTo || 'Atanmadı',
-      date: new Date().toISOString().split('T')[0],
-      status: (this.newAsset.status as 'Aktif' | 'Bakımda' | 'Pasif') || 'Aktif',
-      location: this.newAsset.location || 'Depo',
-      description: this.newAsset.description || ''
-    };
-
-    this.assets.unshift(created);
-    this.newAsset = { barcode: '', name: '', category: 'Bilgisayar', assignedTo: '', status: 'Aktif', location: 'Merkez Ofis', description: '' };
+    this.assetService.createAsset(this.newAsset).subscribe({
+      next: () => {
+        this.loadAssets();
+        this.newAsset = this.getEmptyAssetRequest();
+      },
+      error: (err) => console.error('Error creating asset:', err)
+    });
   }
 
-  openDetailModal(asset: Asset): void {
+  openDetailModal(asset: AssetResponse): void {
     this.selectedAsset = { ...asset };
   }
 
-  openEditModal(asset: Asset): void {
-    this.editAssetModel = { ...asset };
+  openEditModal(asset: AssetResponse): void {
+    this.editAssetId = asset.id;
+    this.editAssetModel = {
+      name: asset.name,
+      serialNumber: asset.serialNumber,
+      type: asset.type,
+      status: asset.status,
+      departmentId: null,
+      assignedUserId: null
+    };
   }
 
   updateAsset(): void {
-    const index = this.assets.findIndex(a => a.barcode === this.editAssetModel.barcode);
-    if (index !== -1) {
-      this.assets[index] = { ...this.editAssetModel };
+    if (!this.editAssetId) return;
+
+    this.assetService.updateAsset(this.editAssetId, this.editAssetModel).subscribe({
+      next: () => {
+        this.loadAssets();
+        this.editAssetId = null;
+        this.editAssetModel = this.getEmptyAssetRequest();
+      },
+      error: (err) => console.error('Error updating asset:', err)
+    });
+  }
+
+  deleteAsset(id: number, serialNumber: string): void {
+    if (confirm(`Asset with serial number ${serialNumber} will be deleted. Are you sure?`)) {
+      this.assetService.deleteAsset(id).subscribe({
+        next: () => this.loadAssets(),
+        error: (err) => console.error('Error deleting asset:', err)
+      });
     }
   }
 
-  deleteAsset(barcode: string): void {
-    if (confirm(`${barcode} barkodlu varlığı silmek istediğinize emin misiniz?`)) {
-      this.assets = this.assets.filter(a => a.barcode !== barcode);
-    }
-  }
-
-  private getEmptyAsset(): Asset {
+  private getEmptyAssetRequest(): AssetCreateRequest {
     return {
-      barcode: '',
       name: '',
-      category: 'Bilgisayar',
-      assignedTo: '',
-      date: '',
-      status: 'Aktif',
-      location: '',
-      description: ''
+      serialNumber: '',
+      type: 'LAPTOP',
+      status: 'ACTIVE',
+      departmentId: null,
+      assignedUserId: null
     };
   }
 
   getStatusBadgeClass(status: string): string {
     switch (status) {
-      case 'Aktif': return 'bg-success-subtle text-success border border-success-subtle';
-      case 'Bakımda': return 'bg-warning-subtle text-warning-emphasis border border-warning-subtle';
-      case 'Pasif': return 'bg-secondary-subtle text-secondary border border-secondary-subtle';
-      default: return 'bg-light text-dark';
+      case 'ACTIVE':
+      case 'Active':
+        return 'bg-success-subtle text-success border border-success-subtle';
+      case 'IN_REPAIR':
+      case 'Under Maintenance':
+        return 'bg-warning-subtle text-warning-emphasis border border-warning-subtle';
+      case 'RETIRED':
+      case 'Inactive':
+        return 'bg-secondary-subtle text-secondary border border-secondary-subtle';
+      default:
+        return 'bg-light text-dark';
     }
   }
 }
