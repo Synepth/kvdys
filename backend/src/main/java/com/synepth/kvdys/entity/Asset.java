@@ -1,14 +1,17 @@
 package com.synepth.kvdys.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Table(name = "assets")
 @Getter
 @Setter
-
+@NoArgsConstructor
+@AllArgsConstructor
 public class Asset {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,6 +34,4 @@ public class Asset {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User assignedUser;
-
-    public Asset(){}
 }

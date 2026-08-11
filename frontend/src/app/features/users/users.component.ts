@@ -1,5 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { UserService } from '../../core/services/user.service';
 import { DepartmentService, DepartmentResponse } from '../../core/services/department.service';
@@ -10,7 +11,7 @@ import { RoleResponse } from '../../models/role';
 @Component({
   selector: 'app-users',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './users.component.html',
   styleUrls: ['./users.component.scss']
 })
@@ -19,10 +20,22 @@ export class UsersComponent implements OnInit {
   departments: DepartmentResponse[] = [];
   availableRoles: RoleResponse[] = [];
 
+  // Pagination state
+  currentPage = 0;
+  pageSize = 10;
+  totalPages = 0;
+  totalElements = 0;
+
+  // Filter state
+  searchTerm = '';
+  selectedDepartmentId: number | null = null;
+
   userForm!: FormGroup;
+  departmentForm!: FormGroup;
   isEditMode: boolean = false;
   selectedUserId: number | null = null;
   errorMessage: string | null = null;
+  departmentErrorMessage: string | null = null;
 
   constructor(
     private userService: UserService,
@@ -34,6 +47,7 @@ export class UsersComponent implements OnInit {
 
   ngOnInit(): void {
     this.initForm();
+    this.initDepartmentForm();
     this.loadUsers();
     this.loadDepartments();
     this.loadRoles();
@@ -49,14 +63,43 @@ export class UsersComponent implements OnInit {
     });
   }
 
-  loadUsers(): void {
-    this.userService.getAllUsers().subscribe({
+  initDepartmentForm(): void {
+    this.departmentForm = this.fb.group({
+      name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+      description: ['', [Validators.maxLength(255)]]
+    });
+  }
+
+  loadUsers(page = this.currentPage): void {
+    this.userService.getAllUsers(page, this.pageSize, 'id', this.searchTerm, this.selectedDepartmentId).subscribe({
       next: (data) => {
-        this.users = data;
+        this.users = data.content;
+        this.totalPages = data.totalPages;
+        this.totalElements = data.totalElements;
+        this.currentPage = data.number;
         this.cdr.detectChanges();
       },
       error: (err) => console.error('Users load error:', err)
     });
+  }
+
+  onFilterChange(): void {
+    this.loadUsers(0);
+  }
+
+  clearFilters(): void {
+    this.searchTerm = '';
+    this.selectedDepartmentId = null;
+    this.loadUsers(0);
+  }
+
+  goToPage(page: number): void {
+    if (page < 0 || page >= this.totalPages) return;
+    this.loadUsers(page);
+  }
+
+  get pages(): number[] {
+    return Array.from({ length: this.totalPages }, (_, i) => i);
   }
 
   loadDepartments(): void {
@@ -92,6 +135,11 @@ export class UsersComponent implements OnInit {
 
     this.userForm.get('password')?.setValidators([Validators.required]);
     this.userForm.get('password')?.updateValueAndValidity();
+  }
+
+  openCreateDepartmentModal(): void {
+    this.departmentErrorMessage = null;
+    this.departmentForm.reset();
   }
 
   openEditModal(user: UserResponse): void {
@@ -134,7 +182,7 @@ export class UsersComponent implements OnInit {
       this.userService.updateUser(this.selectedUserId, updatePayload).subscribe({
         next: () => {
           this.closeModal();
-          this.loadUsers();
+          this.loadUsers(this.currentPage);
         },
         error: (err) => {
           console.error('Update error:', err);
@@ -154,7 +202,7 @@ export class UsersComponent implements OnInit {
       this.userService.createUser(createPayload).subscribe({
         next: () => {
           this.closeModal();
-          this.loadUsers();
+          this.loadUsers(this.currentPage);
         },
         error: (err) => {
           console.error('Create error:', err);
@@ -168,7 +216,13 @@ export class UsersComponent implements OnInit {
   deleteUser(id: number): void {
     if (confirm('Are you sure you want to delete this user?')) {
       this.userService.deleteUser(id).subscribe({
-        next: () => this.loadUsers(),
+        next: () => {
+          // If we deleted the last item on a non-first page, go back one page
+          const newPage = this.users.length === 1 && this.currentPage > 0
+            ? this.currentPage - 1
+            : this.currentPage;
+          this.loadUsers(newPage);
+        },
         error: (err) => console.error('Delete error:', err)
       });
     }
@@ -176,6 +230,31 @@ export class UsersComponent implements OnInit {
 
   private closeModal(): void {
     const modalElement = document.getElementById('userModal');
+    if (modalElement) {
+      const closeButton = modalElement.querySelector('.btn-close') as HTMLElement;
+      closeButton?.click();
+    }
+  }
+
+  onSubmitDepartment(): void {
+    if (this.departmentForm.invalid) return;
+    this.departmentErrorMessage = null;
+
+    const { name, description } = this.departmentForm.value;
+    this.departmentService.createDepartment(name, description ?? '').subscribe({
+      next: () => {
+        this.closeDepartmentModal();
+        this.loadDepartments();
+      },
+      error: (err) => {
+        this.departmentErrorMessage = err.error?.message || 'A department with this name already exists.';
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private closeDepartmentModal(): void {
+    const modalElement = document.getElementById('departmentModal');
     if (modalElement) {
       const closeButton = modalElement.querySelector('.btn-close') as HTMLElement;
       closeButton?.click();

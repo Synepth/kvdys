@@ -16,6 +16,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @Service
 @RequiredArgsConstructor
@@ -55,6 +57,16 @@ public class UserService {
                 .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
+    }
+
+    public Page<UserResponse> getAllUsers(Pageable pageable) {
+        return userRepository.findAllByOrderByIdAsc(pageable)
+                .map(this::mapToResponse);
+    }
+
+    public Page<UserResponse> getAllUsers(String search, Long departmentId, Pageable pageable) {
+        return userRepository.findByFilters(search, departmentId, pageable)
+                .map(this::mapToResponse);
     }
 
     public UserResponse updateUser(Long id, UserUpdateRequest request) {

@@ -11,6 +11,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 @RestController
 @RequestMapping("/api/users")
@@ -27,9 +31,15 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<List<UserResponse>> getAllUsers() {
-        List<UserResponse> users = userService.getAllUsers();
-        return ResponseEntity.ok(users);
+    public ResponseEntity<Page<UserResponse>> getAllUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long departmentId) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy).ascending());
+        return ResponseEntity.ok(userService.getAllUsers(search, departmentId, pageable));
     }
     @PutMapping("/{id}")
     public ResponseEntity<UserResponse> updateUser(

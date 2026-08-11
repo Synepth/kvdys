@@ -1,5 +1,4 @@
 package com.synepth.kvdys.controller;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,10 +12,10 @@ import java.util.Map;
 public class HealthController {
 
     @GetMapping
-    public Map<String, String> checkHealth() {
+    public ResponseEntity<Map<String, String>> checkHealth() {
         Map<String, String> response = new HashMap<>();
         response.put("status", "UP");
         response.put("message", "KVDYS Active");
-        return response;
+        return ResponseEntity.ok(response);
     }
 }

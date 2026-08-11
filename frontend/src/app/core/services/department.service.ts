@@ -18,4 +18,8 @@ export class DepartmentService {
   getAllDepartments(): Observable<DepartmentResponse[]> {
     return this.http.get<DepartmentResponse[]>(this.apiUrl);
   }
+
+  createDepartment(name: string, description: string): Observable<DepartmentResponse> {
+    return this.http.post<DepartmentResponse>(this.apiUrl, { name, description });
+  }
 }

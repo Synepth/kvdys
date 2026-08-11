@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { UserResponse, UserCreateRequest, UserUpdateRequest } from '../../models/user';
+import { UserResponse, UserCreateRequest, UserUpdateRequest, Page } from '../../models/user';
 @Injectable({
   providedIn: 'root'
 })
@@ -10,8 +10,14 @@ export class UserService {
 
   constructor(private http: HttpClient) {}
 
-  getAllUsers(): Observable<UserResponse[]> {
-    return this.http.get<UserResponse[]>(this.apiUrl);
+  getAllUsers(page = 0, size = 10, sortBy = 'id', search = '', departmentId: number | null = null): Observable<Page<UserResponse>> {
+    let params = new HttpParams()
+      .set('page', page)
+      .set('size', size)
+      .set('sortBy', sortBy);
+    if (search) params = params.set('search', search);
+    if (departmentId !== null) params = params.set('departmentId', departmentId);
+    return this.http.get<Page<UserResponse>>(this.apiUrl, { params });
   }
 
   createUser(request: UserCreateRequest): Observable<UserResponse> {
