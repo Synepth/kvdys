@@ -31,11 +31,9 @@ export class UsersComponent implements OnInit {
   selectedDepartmentId: number | null = null;
 
   userForm!: FormGroup;
-  departmentForm!: FormGroup;
   isEditMode: boolean = false;
   selectedUserId: number | null = null;
   errorMessage: string | null = null;
-  departmentErrorMessage: string | null = null;
 
   constructor(
     private userService: UserService,
@@ -47,7 +45,6 @@ export class UsersComponent implements OnInit {
 
   ngOnInit(): void {
     this.initForm();
-    this.initDepartmentForm();
     this.loadUsers();
     this.loadDepartments();
     this.loadRoles();
@@ -63,12 +60,6 @@ export class UsersComponent implements OnInit {
     });
   }
 
-  initDepartmentForm(): void {
-    this.departmentForm = this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
-      description: ['', [Validators.maxLength(255)]]
-    });
-  }
 
   loadUsers(page = this.currentPage): void {
     this.userService.getAllUsers(page, this.pageSize, 'id', this.searchTerm, this.selectedDepartmentId).subscribe({
@@ -137,10 +128,6 @@ export class UsersComponent implements OnInit {
     this.userForm.get('password')?.updateValueAndValidity();
   }
 
-  openCreateDepartmentModal(): void {
-    this.departmentErrorMessage = null;
-    this.departmentForm.reset();
-  }
 
   openEditModal(user: UserResponse): void {
     this.isEditMode = true;
@@ -236,28 +223,5 @@ export class UsersComponent implements OnInit {
     }
   }
 
-  onSubmitDepartment(): void {
-    if (this.departmentForm.invalid) return;
-    this.departmentErrorMessage = null;
-
-    const { name, description } = this.departmentForm.value;
-    this.departmentService.createDepartment(name, description ?? '').subscribe({
-      next: () => {
-        this.closeDepartmentModal();
-        this.loadDepartments();
-      },
-      error: (err) => {
-        this.departmentErrorMessage = err.error?.message || 'A department with this name already exists.';
-        this.cdr.detectChanges();
-      }
-    });
-  }
-
-  private closeDepartmentModal(): void {
-    const modalElement = document.getElementById('departmentModal');
-    if (modalElement) {
-      const closeButton = modalElement.querySelector('.btn-close') as HTMLElement;
-      closeButton?.click();
-    }
-  }
 }
+

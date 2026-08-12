@@ -5,6 +5,8 @@ import { Observable } from 'rxjs';
 export interface DepartmentResponse {
   id: number;
   name: string;
+  description?: string;
+  userCount: number;
 }
 
 @Injectable({
@@ -21,5 +23,13 @@ export class DepartmentService {
 
   createDepartment(name: string, description: string): Observable<DepartmentResponse> {
     return this.http.post<DepartmentResponse>(this.apiUrl, { name, description });
+  }
+
+  updateDepartment(id: number, name: string, description: string): Observable<DepartmentResponse> {
+    return this.http.put<DepartmentResponse>(`${this.apiUrl}/${id}`, { name, description });
+  }
+
+  deleteDepartment(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 }

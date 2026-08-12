@@ -40,16 +40,6 @@
 
     <!-- Primary Action Buttons Pushed to Right -->
     <div class="d-flex align-items-center gap-2 ms-auto">
-      <!-- Add New Department -->
-      <button
-        type="button"
-        class="btn btn-outline-primary"
-        data-bs-toggle="modal"
-        data-bs-target="#departmentModal"
-        (click)="openCreateDepartmentModal()">
-        + Add New Department
-      </button>
-
       <!-- Add New User -->
       <button
         type="button"
@@ -213,52 +203,6 @@
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
           <button type="submit" class="btn btn-primary" [disabled]="userForm.invalid">
             {{ isEditMode ? 'Update' : 'Save' }}
-          </button>
-        </div>
-      </form>
-
-    </div>
-  </div>
-</div>
-
-<!-- Modal 2: Add New Department Modal -->
-<div class="modal fade" id="departmentModal" tabindex="-1" aria-labelledby="departmentModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-
-      <div class="modal-header">
-        <h5 class="modal-title" id="departmentModalLabel">Add New Department</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-
-      <form [formGroup]="departmentForm" (ngSubmit)="onSubmitDepartment()">
-        <div class="modal-body">
-
-          <!-- Error Alert Container -->
-          @if (departmentErrorMessage) {
-            <div class="alert alert-danger py-2 mb-3" role="alert">
-              {{ departmentErrorMessage }}
-            </div>
-          }
-
-          <!-- Department Name Input -->
-          <div class="mb-3">
-            <label class="form-label">Department Name</label>
-            <input type="text" class="form-control" formControlName="name" placeholder="e.g. Engineering" />
-          </div>
-
-          <!-- Department Description Input -->
-          <div class="mb-3">
-            <label class="form-label">Description <span class="text-muted">(optional)</span></label>
-            <textarea class="form-control" formControlName="description" rows="3" placeholder="Brief description of this department..."></textarea>
-          </div>
-
-        </div>
-
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary" [disabled]="departmentForm.invalid">
-            Save Department
           </button>
         </div>
       </form>

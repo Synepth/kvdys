@@ -10,4 +10,6 @@ import lombok.NoArgsConstructor;
 public class DepartmentResponse {
     private Long id;
     private String name;
+    private String description;
+    private long userCount;
 }

@@ -30,4 +30,15 @@ public class DepartmentController {
     public ResponseEntity<DepartmentResponse> createDepartment(@Valid @RequestBody DepartmentCreateRequest request) {
         return new ResponseEntity<>(departmentService.createDepartment(request), HttpStatus.CREATED);
     }
-}
+
+    @PutMapping("/{id}")
+    public ResponseEntity<DepartmentResponse> updateDepartment(@PathVariable Long id, @Valid @RequestBody DepartmentCreateRequest request) {
+        return ResponseEntity.ok(departmentService.updateDepartment(id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteDepartment(@PathVariable Long id) {
+        departmentService.deleteDepartment(id);
+        return ResponseEntity.noContent().build();
+    }
+}
