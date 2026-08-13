@@ -2,7 +2,8 @@ import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { NavbarComponent } from './shared/components/navbar/navbar';
 import { SidebarComponent } from './shared/components/sidebar/sidebar';
-import {FooterComponent} from './shared/components/footer/footer';
+import { FooterComponent } from './shared/components/footer/footer';
+import { ToastContainerComponent } from './shared/components/toast-container/toast-container';
 
 @Component({
   selector: 'app-root',
@@ -11,7 +12,8 @@ import {FooterComponent} from './shared/components/footer/footer';
     RouterOutlet,
     NavbarComponent,
     SidebarComponent,
-    FooterComponent
+    FooterComponent,
+    ToastContainerComponent
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss'

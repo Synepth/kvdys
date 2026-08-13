@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { Page } from '../../models/user';
 
 export interface DepartmentResponse {
   id: number;
@@ -17,8 +18,17 @@ export class DepartmentService {
 
   constructor(private http: HttpClient) {}
 
-  getAllDepartments(): Observable<DepartmentResponse[]> {
-    return this.http.get<DepartmentResponse[]>(this.apiUrl);
+  getAllDepartments(page = 0, size = 10, sortBy = 'id', search = ''): Observable<Page<DepartmentResponse>> {
+    let params = new HttpParams()
+      .set('page', page)
+      .set('size', size)
+      .set('sortBy', sortBy);
+    if (search) params = params.set('search', search);
+    return this.http.get<Page<DepartmentResponse>>(this.apiUrl, { params });
+  }
+
+  getAllDepartmentsList(): Observable<DepartmentResponse[]> {
+    return this.http.get<DepartmentResponse[]>(`${this.apiUrl}/all`);
   }
 
   createDepartment(name: string, description: string): Observable<DepartmentResponse> {

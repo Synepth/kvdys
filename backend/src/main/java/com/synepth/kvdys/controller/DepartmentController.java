@@ -4,6 +4,10 @@ import com.synepth.kvdys.dto.DepartmentCreateRequest;
 import com.synepth.kvdys.dto.DepartmentResponse;
 import com.synepth.kvdys.service.DepartmentService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,8 +26,19 @@ public class DepartmentController {
     }
 
     @GetMapping
-    public ResponseEntity<List<DepartmentResponse>> getAllDepartments() {
-        return ResponseEntity.ok(departmentService.getAllDepartments());
+    public ResponseEntity<Page<DepartmentResponse>> getAllDepartments(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(required = false) String search) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy).ascending());
+        return ResponseEntity.ok(departmentService.getAllDepartments(search, pageable));
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<DepartmentResponse>> getAllDepartmentsList() {
+        return ResponseEntity.ok(departmentService.getAllDepartmentsList());
     }
 
     @PostMapping

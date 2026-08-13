@@ -1,0 +1,18 @@
+<div class="toast-container-fixed">
+  @for (toast of toasts$ | async; track toast.id) {
+    <div
+      class="toast-item alert alert-{{ toast.type }} d-flex align-items-center justify-content-between shadow-sm mb-2"
+      role="alert">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi {{ getIconClass(toast.type) }} fs-5"></i>
+        <span>{{ toast.message }}</span>
+      </div>
+      <button
+        type="button"
+        class="btn-close ms-3"
+        aria-label="Close"
+        (click)="remove(toast.id)">
+      </button>
+    </div>
+  }
+</div>

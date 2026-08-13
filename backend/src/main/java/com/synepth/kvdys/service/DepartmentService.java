@@ -5,6 +5,8 @@ import com.synepth.kvdys.dto.DepartmentResponse;
 import com.synepth.kvdys.entity.Department;
 import com.synepth.kvdys.repository.DepartmentRepository;
 import com.synepth.kvdys.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,11 +23,25 @@ public class DepartmentService {
         this.userRepository = userRepository;
     }
 
-    public List<DepartmentResponse> getAllDepartments() {
-        return departmentRepository.findAll().stream()
-                .map(dept -> new DepartmentResponse(dept.getId(), dept.getName(), dept.getDescription(),
-                        userRepository.countByDepartmentId(dept.getId())))
+    public List<DepartmentResponse> getAllDepartmentsList() {
+        return departmentRepository.findAllByOrderByIdAsc().stream()
+                .map(this::mapToResponse)
                 .collect(Collectors.toList());
+    }
+
+    public Page<DepartmentResponse> getAllDepartments(Pageable pageable) {
+        return departmentRepository.findAllByOrderByIdAsc(pageable)
+                .map(this::mapToResponse);
+    }
+
+    public Page<DepartmentResponse> getAllDepartments(String search, Pageable pageable) {
+        return departmentRepository.findByFilters(search, pageable)
+                .map(this::mapToResponse);
+    }
+
+    private DepartmentResponse mapToResponse(Department dept) {
+        return new DepartmentResponse(dept.getId(), dept.getName(), dept.getDescription(),
+                userRepository.countByDepartmentId(dept.getId()));
     }
 
     public DepartmentResponse createDepartment(DepartmentCreateRequest request) {

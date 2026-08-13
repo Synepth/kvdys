@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DepartmentService, DepartmentResponse } from '../../core/services/department.service';
+import { ToastService } from '../../core/services/toast.service';
 
 @Component({
   selector: 'app-departments',
@@ -13,8 +14,14 @@ import { DepartmentService, DepartmentResponse } from '../../core/services/depar
 })
 export class DepartmentsComponent implements OnInit {
   departments: DepartmentResponse[] = [];
-  filteredDepartments: DepartmentResponse[] = [];
 
+  // Pagination state
+  currentPage = 0;
+  pageSize = 10;
+  totalPages = 0;
+  totalElements = 0;
+
+  // Filter state
   searchTerm = '';
 
   departmentForm!: FormGroup;
@@ -24,6 +31,7 @@ export class DepartmentsComponent implements OnInit {
 
   constructor(
     private departmentService: DepartmentService,
+    private toastService: ToastService,
     private fb: FormBuilder,
     private cdr: ChangeDetectorRef
   ) {}
@@ -40,36 +48,38 @@ export class DepartmentsComponent implements OnInit {
     });
   }
 
-  loadDepartments(): void {
-    this.departmentService.getAllDepartments().subscribe({
+  loadDepartments(page = this.currentPage): void {
+    this.departmentService.getAllDepartments(page, this.pageSize, 'id', this.searchTerm).subscribe({
       next: (data) => {
-        this.departments = data;
-        this.applyFilter();
+        this.departments = data.content;
+        this.totalPages = data.totalPages;
+        this.totalElements = data.totalElements;
+        this.currentPage = data.number;
         this.cdr.detectChanges();
       },
-      error: (err) => console.error('Departments load error:', err)
+      error: (err) => {
+        console.error('Departments load error:', err);
+        this.toastService.error('Failed to load departments');
+      }
     });
   }
 
   onFilterChange(): void {
-    this.applyFilter();
+    this.loadDepartments(0);
   }
 
   clearFilters(): void {
     this.searchTerm = '';
-    this.applyFilter();
+    this.loadDepartments(0);
   }
 
-  applyFilter(): void {
-    const term = this.searchTerm.toLowerCase().trim();
-    if (!term) {
-      this.filteredDepartments = [...this.departments];
-    } else {
-      this.filteredDepartments = this.departments.filter(d =>
-        d.name.toLowerCase().includes(term) ||
-        (d.description ?? '').toLowerCase().includes(term)
-      );
-    }
+  goToPage(page: number): void {
+    if (page < 0 || page >= this.totalPages) return;
+    this.loadDepartments(page);
+  }
+
+  get pages(): number[] {
+    return Array.from({ length: this.totalPages }, (_, i) => i);
   }
 
   openCreateModal(): void {
@@ -100,9 +110,11 @@ export class DepartmentsComponent implements OnInit {
         next: () => {
           this.closeModal();
           this.loadDepartments();
+          this.toastService.success('Department updated successfully');
         },
         error: (err) => {
           this.errorMessage = err.error?.message || 'An error occurred while updating the department.';
+          this.toastService.error(this.errorMessage!);
           this.cdr.detectChanges();
         }
       });
@@ -111,9 +123,11 @@ export class DepartmentsComponent implements OnInit {
         next: () => {
           this.closeModal();
           this.loadDepartments();
+          this.toastService.success('Department created successfully');
         },
         error: (err) => {
           this.errorMessage = err.error?.message || 'A department with this name already exists.';
+          this.toastService.error(this.errorMessage!);
           this.cdr.detectChanges();
         }
       });
@@ -127,8 +141,14 @@ export class DepartmentsComponent implements OnInit {
 
     if (confirm(message)) {
       this.departmentService.deleteDepartment(dept.id).subscribe({
-        next: () => this.loadDepartments(),
-        error: (err) => console.error('Delete error:', err)
+        next: () => {
+          this.loadDepartments();
+          this.toastService.success(`Department "${dept.name}" deleted successfully`);
+        },
+        error: (err) => {
+          console.error('Delete error:', err);
+          this.toastService.error('Failed to delete department');
+        }
       });
     }
   }
