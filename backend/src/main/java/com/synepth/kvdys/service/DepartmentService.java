@@ -29,11 +29,6 @@ public class DepartmentService {
                 .collect(Collectors.toList());
     }
 
-    public Page<DepartmentResponse> getAllDepartments(Pageable pageable) {
-        return departmentRepository.findAllByOrderByIdAsc(pageable)
-                .map(this::mapToResponse);
-    }
-
     public Page<DepartmentResponse> getAllDepartments(String search, Pageable pageable) {
         return departmentRepository.findByFilters(search, pageable)
                 .map(this::mapToResponse);
@@ -72,4 +67,4 @@ public class DepartmentService {
         }
         departmentRepository.deleteById(id);
     }
-}
+}

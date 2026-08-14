@@ -10,5 +10,7 @@ import lombok.AllArgsConstructor;
 public class RoleResponse {
     private Long id;
     private String name;
+    private String description;
+    private long userCount;
 
 }

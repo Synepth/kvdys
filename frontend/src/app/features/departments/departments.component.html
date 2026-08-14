@@ -142,7 +142,19 @@
           <!-- Department Name Input -->
           <div class="mb-3">
             <label class="form-label">Department Name</label>
-            <input type="text" class="form-control" formControlName="name" placeholder="e.g. Engineering" />
+            <input
+              type="text"
+              class="form-control"
+              [class.is-invalid]="departmentForm.get('name')?.invalid && departmentForm.get('name')?.touched"
+              formControlName="name"
+              placeholder="e.g. Engineering" />
+            @if (departmentForm.get('name')?.touched && departmentForm.get('name')?.hasError('required')) {
+              <div class="invalid-feedback">Department name is required.</div>
+            } @else if (departmentForm.get('name')?.touched && departmentForm.get('name')?.hasError('minlength')) {
+              <div class="invalid-feedback">Department name must be at least 2 characters.</div>
+            } @else if (departmentForm.get('name')?.touched && departmentForm.get('name')?.hasError('maxlength')) {
+              <div class="invalid-feedback">Department name cannot exceed 100 characters.</div>
+            }
           </div>
 
           <!-- Department Description Input -->
