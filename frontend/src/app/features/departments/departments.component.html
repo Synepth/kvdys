@@ -2,7 +2,7 @@
 
   <!-- Header Section -->
   <div class="mb-3">
-    <h2 class="fw-bold m-0">User Management</h2>
+    <h2 class="fw-bold m-0">Department Management</h2>
   </div>
 
   <!-- Unified Toolbar: Filters (Left) & Action Buttons (Right) -->
@@ -14,46 +14,33 @@
       <input
         type="text"
         class="form-control"
-        placeholder="Search username or email..."
+        placeholder="Search name or description..."
         [(ngModel)]="searchTerm"
         (ngModelChange)="onFilterChange()" />
     </div>
 
-    <!-- Department Filter Dropdown -->
-    <select
-      class="form-select"
-      style="max-width: 200px;"
-      [(ngModel)]="selectedDepartmentId"
-      (ngModelChange)="onFilterChange()">
-      <option [ngValue]="null">All Departments</option>
-      @for (dept of departments; track dept.id) {
-        <option [ngValue]="dept.id">{{ dept.name }}</option>
-      }
-    </select>
-
     <!-- Clear Filters Button -->
-    @if (searchTerm || selectedDepartmentId !== null) {
+    @if (searchTerm) {
       <button class="btn btn-outline-secondary" (click)="clearFilters()">
         <i class="bi bi-x-lg"></i> Clear
       </button>
     }
 
-    <!-- Primary Action Buttons Pushed to Right -->
-    <div class="d-flex align-items-center gap-2 ms-auto">
-      <!-- Add New User -->
+    <!-- Add New Department pushed to right -->
+    <div class="ms-auto">
       <button
         type="button"
         class="btn btn-primary"
         data-bs-toggle="modal"
-        data-bs-target="#userModal"
+        data-bs-target="#departmentModal"
         (click)="openCreateModal()">
-        + Add New User
+        + Add New Department
       </button>
     </div>
 
   </div>
 
-  <!-- Users Data Table -->
+  <!-- Departments Data Table -->
   <div class="card shadow-sm border-0">
     <div class="card-body p-0">
       <div class="table-responsive">
@@ -61,44 +48,40 @@
           <thead class="table-dark">
           <tr>
             <th>ID</th>
-            <th>Username</th>
-            <th>Email</th>
-            <th>Department</th>
-            <th>Roles</th>
+            <th>Name</th>
+            <th>Description</th>
+            <th class="text-center">Users</th>
             <th class="text-center">Actions</th>
           </tr>
           </thead>
           <tbody>
-            @for (user of users; track user.id) {
+            @for (dept of departments; track dept.id) {
               <tr>
-                <td>{{ user.id }}</td>
-                <td>{{ user.username }}</td>
-                <td>{{ user.email }}</td>
-                <td>{{ user.departmentName || '-' }}</td>
-                <td>
-                  @for (role of user.roles; track role) {
-                    <span class="badge bg-secondary me-1">{{ role }}</span>
-                  }
+                <td>{{ dept.id }}</td>
+                <td>{{ dept.name }}</td>
+                <td class="text-muted">{{ dept.description || '-' }}</td>
+                <td class="text-center">
+                  <span class="badge bg-secondary">{{ dept.userCount }}</span>
                 </td>
                 <td class="text-center">
                   <button
                     class="btn btn-sm btn-outline-warning me-2"
                     data-bs-toggle="modal"
-                    data-bs-target="#userModal"
-                    (click)="openEditModal(user)">
+                    data-bs-target="#departmentModal"
+                    (click)="openEditModal(dept)">
                     Edit
                   </button>
                   <button
                     class="btn btn-sm btn-outline-danger"
-                    (click)="deleteUser(user.id)">
+                    (click)="deleteDepartment(dept)">
                     Delete
                   </button>
                 </td>
               </tr>
             } @empty {
               <tr>
-                <td colspan="6" class="text-center py-4 text-muted">
-                  No users found.
+                <td colspan="5" class="text-center py-4 text-muted">
+                  No departments found.
                 </td>
               </tr>
             }
@@ -112,7 +95,7 @@
   @if (totalPages > 1) {
     <div class="d-flex justify-content-between align-items-center mt-3">
       <small class="text-muted">
-        Showing page {{ currentPage + 1 }} of {{ totalPages }} &mdash; {{ totalElements }} total users
+        Showing page {{ currentPage + 1 }} of {{ totalPages }} &mdash; {{ totalElements }} total departments
       </small>
       <nav>
         <ul class="pagination pagination-sm mb-0">
@@ -134,19 +117,19 @@
 
 </div>
 
-<!-- Modal 1: User Add / Edit Modal -->
-<div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
+<!-- Department Add / Edit Modal -->
+<div class="modal fade" id="departmentModal" tabindex="-1" aria-labelledby="departmentModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
 
       <div class="modal-header">
-        <h5 class="modal-title" id="userModalLabel">
-          {{ isEditMode ? 'Edit User' : 'Add New User' }}
+        <h5 class="modal-title" id="departmentModalLabel">
+          {{ isEditMode ? 'Edit Department' : 'Add New Department' }}
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
 
-      <form [formGroup]="userForm" (ngSubmit)="onSubmit()">
+      <form [formGroup]="departmentForm" (ngSubmit)="onSubmit()">
         <div class="modal-body">
 
           <!-- Error Alert Container -->
@@ -156,52 +139,23 @@
             </div>
           }
 
-          <!-- Username Field -->
+          <!-- Department Name Input -->
           <div class="mb-3">
-            <label class="form-label">Username</label>
-            <input type="text" class="form-control" formControlName="username" />
+            <label class="form-label">Department Name</label>
+            <input type="text" class="form-control" formControlName="name" placeholder="e.g. Engineering" />
           </div>
 
-          <!-- Email Field -->
+          <!-- Department Description Input -->
           <div class="mb-3">
-            <label class="form-label">Email</label>
-            <input type="email" class="form-control" formControlName="email" />
-          </div>
-
-          <!-- Password Field (Only rendered in Create Mode) -->
-          @if (!isEditMode) {
-            <div class="mb-3">
-              <label class="form-label">Password</label>
-              <input type="password" class="form-control" formControlName="password" />
-            </div>
-          }
-
-          <!-- Department Selection Dropdown -->
-          <div class="mb-3">
-            <label class="form-label">Department</label>
-            <select class="form-select" formControlName="departmentId">
-              <option [ngValue]="null" disabled>Select Department</option>
-              @for (dept of departments; track dept.id) {
-                <option [ngValue]="dept.id">{{ dept.name }}</option>
-              }
-            </select>
-          </div>
-
-          <!-- Role Selection Dropdown -->
-          <div class="mb-3">
-            <label class="form-label">Role</label>
-            <select class="form-select" formControlName="roleId">
-              @for (role of availableRoles; track role.id) {
-                <option [ngValue]="role.id">{{ role.name }}</option>
-              }
-            </select>
+            <label class="form-label">Description <span class="text-muted">(optional)</span></label>
+            <textarea class="form-control" formControlName="description" rows="3" placeholder="Brief description of this department..."></textarea>
           </div>
 
         </div>
 
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary" [disabled]="userForm.invalid">
+          <button type="submit" class="btn btn-primary" [disabled]="departmentForm.invalid">
             {{ isEditMode ? 'Update' : 'Save' }}
           </button>
         </div>

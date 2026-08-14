@@ -8,6 +8,8 @@ import { UserResponse, UserCreateRequest, UserUpdateRequest } from '../../models
 import { RoleService } from '../../core/services/role.service';
 import { RoleResponse } from '../../models/role';
 
+import { ToastService } from '../../core/services/toast.service';
+
 @Component({
   selector: 'app-users',
   standalone: true,
@@ -31,15 +33,14 @@ export class UsersComponent implements OnInit {
   selectedDepartmentId: number | null = null;
 
   userForm!: FormGroup;
-  departmentForm!: FormGroup;
   isEditMode: boolean = false;
   selectedUserId: number | null = null;
   errorMessage: string | null = null;
-  departmentErrorMessage: string | null = null;
 
   constructor(
     private userService: UserService,
     private departmentService: DepartmentService,
+    private toastService: ToastService,
     private fb: FormBuilder,
     private cdr: ChangeDetectorRef,
     private roleService: RoleService
@@ -47,7 +48,6 @@ export class UsersComponent implements OnInit {
 
   ngOnInit(): void {
     this.initForm();
-    this.initDepartmentForm();
     this.loadUsers();
     this.loadDepartments();
     this.loadRoles();
@@ -63,12 +63,6 @@ export class UsersComponent implements OnInit {
     });
   }
 
-  initDepartmentForm(): void {
-    this.departmentForm = this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
-      description: ['', [Validators.maxLength(255)]]
-    });
-  }
 
   loadUsers(page = this.currentPage): void {
     this.userService.getAllUsers(page, this.pageSize, 'id', this.searchTerm, this.selectedDepartmentId).subscribe({
@@ -103,7 +97,7 @@ export class UsersComponent implements OnInit {
   }
 
   loadDepartments(): void {
-    this.departmentService.getAllDepartments().subscribe({
+    this.departmentService.getAllDepartmentsList().subscribe({
       next: (data) => {
         this.departments = data;
         this.cdr.detectChanges();
@@ -137,10 +131,6 @@ export class UsersComponent implements OnInit {
     this.userForm.get('password')?.updateValueAndValidity();
   }
 
-  openCreateDepartmentModal(): void {
-    this.departmentErrorMessage = null;
-    this.departmentForm.reset();
-  }
 
   openEditModal(user: UserResponse): void {
     this.isEditMode = true;
@@ -183,10 +173,12 @@ export class UsersComponent implements OnInit {
         next: () => {
           this.closeModal();
           this.loadUsers(this.currentPage);
+          this.toastService.success('User updated successfully');
         },
         error: (err) => {
           console.error('Update error:', err);
           this.errorMessage = err.error?.message || 'An error occurred while updating the user.';
+          this.toastService.error(this.errorMessage!);
           this.cdr.detectChanges();
         }
       });
@@ -203,10 +195,12 @@ export class UsersComponent implements OnInit {
         next: () => {
           this.closeModal();
           this.loadUsers(this.currentPage);
+          this.toastService.success('User created successfully');
         },
         error: (err) => {
           console.error('Create error:', err);
           this.errorMessage = err.error?.message || 'This username or email is already in use.';
+          this.toastService.error(this.errorMessage!);
           this.cdr.detectChanges();
         }
       });
@@ -217,13 +211,16 @@ export class UsersComponent implements OnInit {
     if (confirm('Are you sure you want to delete this user?')) {
       this.userService.deleteUser(id).subscribe({
         next: () => {
-          // If we deleted the last item on a non-first page, go back one page
           const newPage = this.users.length === 1 && this.currentPage > 0
             ? this.currentPage - 1
             : this.currentPage;
           this.loadUsers(newPage);
+          this.toastService.success('User deleted successfully');
         },
-        error: (err) => console.error('Delete error:', err)
+        error: (err) => {
+          console.error('Delete error:', err);
+          this.toastService.error('Failed to delete user');
+        }
       });
     }
   }
@@ -236,28 +233,5 @@ export class UsersComponent implements OnInit {
     }
   }
 
-  onSubmitDepartment(): void {
-    if (this.departmentForm.invalid) return;
-    this.departmentErrorMessage = null;
-
-    const { name, description } = this.departmentForm.value;
-    this.departmentService.createDepartment(name, description ?? '').subscribe({
-      next: () => {
-        this.closeDepartmentModal();
-        this.loadDepartments();
-      },
-      error: (err) => {
-        this.departmentErrorMessage = err.error?.message || 'A department with this name already exists.';
-        this.cdr.detectChanges();
-      }
-    });
-  }
-
-  private closeDepartmentModal(): void {
-    const modalElement = document.getElementById('departmentModal');
-    if (modalElement) {
-      const closeButton = modalElement.querySelector('.btn-close') as HTMLElement;
-      closeButton?.click();
-    }
-  }
 }
+

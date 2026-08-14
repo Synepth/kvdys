@@ -6,7 +6,7 @@ import { UserResponse, UserCreateRequest, UserUpdateRequest, Page } from '../../
   providedIn: 'root'
 })
 export class UserService {
-  private apiUrl = 'http://localhost:8080/api/users';
+  private apiUrl = 'http://localhost:8080/api/v1/users';
 
   constructor(private http: HttpClient) {}
 
@@ -31,5 +31,5 @@ export class UserService {
   deleteUser(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
-  
+
 }
