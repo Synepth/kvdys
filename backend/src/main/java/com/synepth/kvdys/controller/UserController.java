@@ -1,5 +1,6 @@
 package com.synepth.kvdys.controller;
 
+import com.synepth.kvdys.dto.ChangePasswordRequest;
 import com.synepth.kvdys.dto.UserCreateRequest;
 import com.synepth.kvdys.dto.UserResponse;
 import com.synepth.kvdys.dto.UserUpdateRequest;
@@ -10,7 +11,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -47,6 +50,18 @@ public class UserController {
 
         UserResponse response = userService.updateUser(id, request);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<Map<String, String>> changePassword(
+            Principal principal,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        String username = (principal != null) ? principal.getName() : request.getUsername();
+        if (username == null || username.isBlank()) {
+            throw new RuntimeException("Kullanıcı bilgisi bulunamadı.");
+        }
+        userService.changePassword(username, request);
+        return ResponseEntity.ok(Map.of("message", "Şifre başarıyla değiştirildi."));
     }
 
     @DeleteMapping("/{id}")

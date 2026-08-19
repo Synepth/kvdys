@@ -1,5 +1,6 @@
 package com.synepth.kvdys.service;
 
+import com.synepth.kvdys.dto.ChangePasswordRequest;
 import com.synepth.kvdys.dto.UserCreateRequest;
 import com.synepth.kvdys.dto.UserResponse;
 import com.synepth.kvdys.dto.UserUpdateRequest;
@@ -98,6 +99,27 @@ public class UserService {
             throw new RuntimeException("User not found with id: " + id);
         }
         userRepository.deleteById(id);
+    }
+
+    @Transactional
+    public void changePassword(String username, ChangePasswordRequest request) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı: " + username));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new RuntimeException("Mevcut şifreniz hatalı.");
+        }
+
+        if (request.getNewPassword() == null || request.getNewPassword().trim().length() < 6) {
+            throw new RuntimeException("Yeni şifre en az 6 karakter olmalıdır.");
+        }
+
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+            throw new RuntimeException("Yeni şifre mevcut şifre ile aynı olamaz.");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
     }
 
     private Department getDepartmentById(Long departmentId) {
