@@ -1,5 +1,6 @@
 package com.synepth.kvdys.service;
 
+import com.synepth.kvdys.dto.ChangePasswordRequest;
 import com.synepth.kvdys.dto.UserCreateRequest;
 import com.synepth.kvdys.dto.UserResponse;
 import com.synepth.kvdys.dto.UserUpdateRequest;
@@ -9,6 +10,8 @@ import com.synepth.kvdys.entity.User;
 import com.synepth.kvdys.repository.DepartmentRepository;
 import com.synepth.kvdys.repository.RoleRepository;
 import com.synepth.kvdys.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -26,7 +29,9 @@ public class UserService {
     private final UserRepository userRepository;
     private final DepartmentRepository departmentRepository;
     private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
+    @Transactional
     public UserResponse createUser(UserCreateRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new RuntimeException("This username is already taken.");
@@ -43,7 +48,7 @@ public class UserService {
         User user = new User();
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
-        user.setPassword(request.getPassword());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setDepartment(department);
         user.setRoles(roles);
 
@@ -52,6 +57,7 @@ public class UserService {
 
     }
 
+    @Transactional
     public List<UserResponse> getAllUsers() {
         return userRepository.findAllByOrderByIdAsc()
                 .stream()
@@ -59,16 +65,19 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
     public Page<UserResponse> getAllUsers(Pageable pageable) {
         return userRepository.findAllByOrderByIdAsc(pageable)
                 .map(this::mapToResponse);
     }
 
+    @Transactional
     public Page<UserResponse> getAllUsers(String search, Long departmentId, Pageable pageable) {
         return userRepository.findByFilters(search, departmentId, pageable)
                 .map(this::mapToResponse);
     }
 
+    @Transactional
     public UserResponse updateUser(Long id, UserUpdateRequest request) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
@@ -90,6 +99,27 @@ public class UserService {
             throw new RuntimeException("User not found with id: " + id);
         }
         userRepository.deleteById(id);
+    }
+
+    @Transactional
+    public void changePassword(String username, ChangePasswordRequest request) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı: " + username));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new RuntimeException("Mevcut şifreniz hatalı.");
+        }
+
+        if (request.getNewPassword() == null || request.getNewPassword().trim().length() < 6) {
+            throw new RuntimeException("Yeni şifre en az 6 karakter olmalıdır.");
+        }
+
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+            throw new RuntimeException("Yeni şifre mevcut şifre ile aynı olamaz.");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
     }
 
     private Department getDepartmentById(Long departmentId) {

@@ -8,6 +8,7 @@ import com.synepth.kvdys.entity.User;
 import com.synepth.kvdys.repository.AssetRepository;
 import com.synepth.kvdys.repository.DepartmentRepository;
 import com.synepth.kvdys.repository.UserRepository;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -26,6 +27,7 @@ public class AssetService {
         this.userRepository = userRepository;
     }
 
+    @Transactional
     public List<AssetResponse> getAllAssets() {
         return assetRepository.findAll().stream()
                 .map(this::mapToResponse)
@@ -57,6 +59,7 @@ public class AssetService {
         return mapToResponse(saved);
     }
 
+    @Transactional
     public AssetResponse updateAsset(Long id, AssetCreateRequest request) {
         Asset asset = assetRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Asset not found."));

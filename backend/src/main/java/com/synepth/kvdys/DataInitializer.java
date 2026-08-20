@@ -6,6 +6,7 @@ import com.synepth.kvdys.repository.RoleRepository;
 import com.synepth.kvdys.repository.UserRepository;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
@@ -16,17 +17,19 @@ public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public DataInitializer(UserRepository userRepository,
-                           RoleRepository roleRepository) {
+                           RoleRepository roleRepository,
+                           PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @NullMarked
     @Override
     public void run(String... args) {
-        // 1. Roles Initializer
         Role adminRole = roleRepository.findByName("ROLE_ADMIN")
                 .orElseGet(() -> {
                     Role role = new Role();
@@ -41,12 +44,11 @@ public class DataInitializer implements CommandLineRunner {
                     return roleRepository.save(role);
                 });
 
-        // 2. Initial Admin User Initializer
         if (userRepository.count() == 0) {
             User adminUser = new User();
             adminUser.setUsername("admin");
             adminUser.setEmail("admin@example.com");
-            adminUser.setPassword("password");
+            adminUser.setPassword(passwordEncoder.encode("password"));
 
             Set<Role> roles = new HashSet<>();
             roles.add(adminRole);

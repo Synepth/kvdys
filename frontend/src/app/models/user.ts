@@ -21,6 +21,12 @@ export interface UserUpdateRequest {
   roleIds?: number[];
 }
 
+export interface ChangePasswordRequest {
+  username?: string;
+  currentPassword: string;
+  newPassword: string;
+}
+
 export interface Page<T> {
   content: T[];
   totalElements: number;

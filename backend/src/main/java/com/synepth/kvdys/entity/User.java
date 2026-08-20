@@ -32,9 +32,16 @@ public class User {
     private String email;
 
     @NotBlank(message = "Password is required")
-    @Size(min = 6, message = "Password must be at least 6 characters")
     @Column(nullable = false)
     private String password;
+
+    private String firstName;
+    private String lastName;
+
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
+    private boolean active = true;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "department_id")
