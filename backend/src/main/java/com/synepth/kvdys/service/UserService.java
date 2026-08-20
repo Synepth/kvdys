@@ -104,18 +104,18 @@ public class UserService {
     @Transactional
     public void changePassword(String username, ChangePasswordRequest request) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı: " + username));
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            throw new RuntimeException("Mevcut şifreniz hatalı.");
+            throw new RuntimeException("Current password is incorrect.");
         }
 
         if (request.getNewPassword() == null || request.getNewPassword().trim().length() < 6) {
-            throw new RuntimeException("Yeni şifre en az 6 karakter olmalıdır.");
+            throw new RuntimeException("New password must be at least 6 characters long.");
         }
 
         if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
-            throw new RuntimeException("Yeni şifre mevcut şifre ile aynı olamaz.");
+            throw new RuntimeException("New password cannot be the same as the current password.");
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));

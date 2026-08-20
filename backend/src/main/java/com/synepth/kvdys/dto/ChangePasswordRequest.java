@@ -8,10 +8,10 @@ import lombok.Data;
 public class ChangePasswordRequest {
     private String username;
 
-    @NotBlank(message = "Mevcut şifre gereklidir")
+    @NotBlank(message = "Current password is required")
     private String currentPassword;
 
-    @NotBlank(message = "Yeni şifre gereklidir")
-    @Size(min = 6, message = "Yeni şifre en az 6 karakter olmalıdır")
+    @NotBlank(message = "New password is required")
+    @Size(min = 6, message = "New password must be at least 6 characters long")
     private String newPassword;
 }

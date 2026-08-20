@@ -1,0 +1,26 @@
+.login-page-container {
+  min-height: 100vh;
+}
+
+.login-card {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tracking-wide {
+  letter-spacing: 0.05em;
+}
+
+.fs-7 {
+  font-size: 0.75rem;
+}
+
+.input-group-text {
+  border-color: #dee2e6;
+}
+
+.form-control:focus {
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+}
