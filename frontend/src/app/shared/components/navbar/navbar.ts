@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { UserService } from '../../../core/services/user.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-navbar',
@@ -11,6 +12,11 @@ import { ToastService } from '../../../core/services/toast.service';
   templateUrl: './navbar.html'
 })
 export class NavbarComponent implements OnInit {
+  private fb = inject(FormBuilder);
+  private userService = inject(UserService);
+  private toastService = inject(ToastService);
+  readonly authService = inject(AuthService);
+
   passwordForm!: FormGroup;
   isSubmitting = false;
   errorMessage: string | null = null;
@@ -20,15 +26,10 @@ export class NavbarComponent implements OnInit {
   showNewPassword = false;
   showConfirmPassword = false;
 
-  constructor(
-    private fb: FormBuilder,
-    private userService: UserService,
-    private toastService: ToastService
-  ) {}
-
   ngOnInit(): void {
     this.initForm();
   }
+
 
   initForm(): void {
     this.passwordForm = this.fb.group({
@@ -73,7 +74,7 @@ export class NavbarComponent implements OnInit {
     this.userService.changePassword({ currentPassword, newPassword }).subscribe({
       next: (res) => {
         this.isSubmitting = false;
-        this.successMessage = res.message || 'Şifreniz başarıyla değiştirildi.';
+        this.successMessage = res.message || 'Password changed successfully.';
         this.toastService.success(this.successMessage);
         this.passwordForm.reset();
 
@@ -84,7 +85,7 @@ export class NavbarComponent implements OnInit {
       error: (err) => {
         this.isSubmitting = false;
         console.error('Password change error:', err);
-        this.errorMessage = err.error?.message || 'Şifre değiştirilirken bir hata oluştu.';
+        this.errorMessage = err.error?.message || 'An error occurred while changing your password.';
         this.toastService.error(this.errorMessage!);
       }
     });

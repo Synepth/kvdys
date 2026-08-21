@@ -11,18 +11,18 @@
       <div class="dropdown">
         <button class="btn btn-link text-white text-decoration-none dropdown-toggle d-flex align-items-center gap-2 p-0 border-0 shadow-none" type="button" data-bs-toggle="dropdown" aria-expanded="false">
           <i class="bi bi-person-circle fs-5"></i>
-          <span class="fw-semibold small">Ahmet Yılmaz</span>
+          <span class="fw-semibold small">{{ authService.username() || 'User' }}</span>
         </button>
         <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
           <li><a class="dropdown-item small" href="#"><i class="bi bi-person me-2"></i>My Profile</a></li>
           <li>
             <button class="dropdown-item small" type="button" data-bs-toggle="modal" data-bs-target="#changePasswordModal" (click)="openChangePasswordModal()">
-              <i class="bi bi-key me-2"></i>Şifre Değiştir
+              <i class="bi bi-key me-2"></i>Change Password
             </button>
           </li>
           <li><a class="dropdown-item small" href="#"><i class="bi bi-gear me-2"></i>Settings</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item small text-danger" href="#"><i class="bi bi-box-arrow-right me-2"></i>Log Out</a></li>
+          <li><button class="dropdown-item small text-danger" type="button" (click)="authService.logout()"><i class="bi bi-box-arrow-right me-2"></i>Log Out</button></li>
         </ul>
       </div>
 
@@ -37,9 +37,9 @@
       <div class="modal-header bg-light">
         <h5 class="modal-title fs-6 fw-bold text-dark d-flex align-items-center gap-2" id="changePasswordModalLabel">
           <i class="bi bi-shield-lock-fill text-primary"></i>
-          Şifre Değiştir
+          Change Password
         </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
 
       <form [formGroup]="passwordForm" (ngSubmit)="onSubmitPasswordChange()">
@@ -59,75 +59,76 @@
 
           <!-- Current Password -->
           <div class="mb-3">
-            <label class="form-label small fw-semibold text-secondary">Mevcut Şifre</label>
+            <label class="form-label small fw-semibold text-secondary">Current Password</label>
             <div class="input-group">
               <input [type]="showCurrentPassword ? 'text' : 'password'"
                      formControlName="currentPassword"
                      class="form-control"
-                     placeholder="Mevcut şifrenizi girin"
+                     placeholder="Enter your current password"
                      [ngClass]="{'is-invalid': passwordForm.get('currentPassword')?.touched && passwordForm.get('currentPassword')?.invalid}">
               <button class="btn btn-outline-secondary" type="button" (click)="showCurrentPassword = !showCurrentPassword">
                 <i class="bi" [ngClass]="showCurrentPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
               </button>
             </div>
             <div *ngIf="passwordForm.get('currentPassword')?.touched && passwordForm.get('currentPassword')?.hasError('required')" class="text-danger small mt-1">
-              Mevcut şifre alanı zorunludur.
+              Current password is required.
             </div>
           </div>
 
           <!-- New Password -->
           <div class="mb-3">
-            <label class="form-label small fw-semibold text-secondary">Yeni Şifre</label>
+            <label class="form-label small fw-semibold text-secondary">New Password</label>
             <div class="input-group">
               <input [type]="showNewPassword ? 'text' : 'password'"
                      formControlName="newPassword"
                      class="form-control"
-                     placeholder="En az 6 karakter"
+                     placeholder="At least 6 characters"
                      [ngClass]="{'is-invalid': passwordForm.get('newPassword')?.touched && passwordForm.get('newPassword')?.invalid}">
               <button class="btn btn-outline-secondary" type="button" (click)="showNewPassword = !showNewPassword">
                 <i class="bi" [ngClass]="showNewPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
               </button>
             </div>
             <div *ngIf="passwordForm.get('newPassword')?.touched && passwordForm.get('newPassword')?.hasError('required')" class="text-danger small mt-1">
-              Yeni şifre alanı zorunludur.
+              New password is required.
             </div>
             <div *ngIf="passwordForm.get('newPassword')?.touched && passwordForm.get('newPassword')?.hasError('minlength')" class="text-danger small mt-1">
-              Yeni şifre en az 6 karakter olmalıdır.
+              New password must be at least 6 characters.
             </div>
           </div>
 
           <!-- Confirm New Password -->
           <div class="mb-3">
-            <label class="form-label small fw-semibold text-secondary">Yeni Şifre Tekrar</label>
+            <label class="form-label small fw-semibold text-secondary">Confirm New Password</label>
             <div class="input-group">
               <input [type]="showConfirmPassword ? 'text' : 'password'"
                      formControlName="confirmPassword"
                      class="form-control"
-                     placeholder="Yeni şifrenizi tekrar girin"
+                     placeholder="Confirm your new password"
                      [ngClass]="{'is-invalid': (passwordForm.get('confirmPassword')?.touched && passwordForm.get('confirmPassword')?.invalid) || (passwordForm.touched && passwordForm.hasError('passwordMismatch'))}">
               <button class="btn btn-outline-secondary" type="button" (click)="showConfirmPassword = !showConfirmPassword">
                 <i class="bi" [ngClass]="showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
               </button>
             </div>
             <div *ngIf="passwordForm.get('confirmPassword')?.touched && passwordForm.get('confirmPassword')?.hasError('required')" class="text-danger small mt-1">
-              Şifre tekrarı zorunludur.
+              Password confirmation is required.
             </div>
             <div *ngIf="passwordForm.hasError('passwordMismatch') && passwordForm.get('confirmPassword')?.touched" class="text-danger small mt-1">
-              Yeni şifreler birbiriyle eşleşmiyor.
+              Passwords do not match.
             </div>
           </div>
 
         </div>
 
         <div class="modal-footer bg-light py-2">
-          <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal" [disabled]="isSubmitting">Vazgeç</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal" [disabled]="isSubmitting">Cancel</button>
           <button type="submit" class="btn btn-primary btn-sm px-3 d-flex align-items-center gap-2" [disabled]="passwordForm.invalid || isSubmitting">
             <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-            <span>{{ isSubmitting ? 'Kaydediliyor...' : 'Şifreyi Güncelle' }}</span>
+            <span>{{ isSubmitting ? 'Saving...' : 'Update Password' }}</span>
           </button>
         </div>
       </form>
     </div>
   </div>
 </div>
+
 

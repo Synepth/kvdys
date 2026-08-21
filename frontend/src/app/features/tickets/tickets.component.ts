@@ -35,10 +35,10 @@ export class TicketsComponent {
   };
 
   tickets: Ticket[] = [
-    { id: 'TCK-101', title: 'Monitor not displaying anything', requestedBy: 'Ahmet Yılmaz', category: 'Hardware', priority: 'High', status: 'Open', createdDate: '2026-08-01', description: 'The monitor power light is on but the screen is completely black.' },
-    { id: 'TCK-102', title: 'VPN connection error', requestedBy: 'Elif Kaya', category: 'Network / Internet', priority: 'Medium', status: 'In Review', createdDate: '2026-08-02', description: 'A server timeout error occurs when connecting from home.' },
-    { id: 'TCK-103', title: 'Excel license transfer', requestedBy: 'Mehmet Demir', category: 'Software', priority: 'Low', status: 'Resolved', createdDate: '2026-08-03', description: 'Office activation was assigned to the new computer.' },
-    { id: 'TCK-104', title: 'Keyboard key sticking', requestedBy: 'Ayşe Şahin', category: 'Hardware', priority: 'Low', status: 'Open', createdDate: '2026-08-04', description: 'The Space and Enter keys are sticking.' }
+    { id: 'TCK-101', title: 'Monitor not displaying anything', requestedBy: 'John Doe', category: 'Hardware', priority: 'High', status: 'Open', createdDate: '2026-08-01', description: 'The monitor power light is on but the screen is completely black.' },
+    { id: 'TCK-102', title: 'VPN connection error', requestedBy: 'Jane Smith', category: 'Network / Internet', priority: 'Medium', status: 'In Review', createdDate: '2026-08-02', description: 'A server timeout error occurs when connecting from home.' },
+    { id: 'TCK-103', title: 'Excel license transfer', requestedBy: 'Michael Brown', category: 'Software', priority: 'Low', status: 'Resolved', createdDate: '2026-08-03', description: 'Office activation was assigned to the new computer.' },
+    { id: 'TCK-104', title: 'Keyboard key sticking', requestedBy: 'Emily Davis', category: 'Hardware', priority: 'Low', status: 'Open', createdDate: '2026-08-04', description: 'The Space and Enter keys are sticking.' }
   ];
 
   get filteredTickets(): Ticket[] {

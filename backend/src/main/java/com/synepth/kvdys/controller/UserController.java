@@ -58,10 +58,10 @@ public class UserController {
             @Valid @RequestBody ChangePasswordRequest request) {
         String username = (principal != null) ? principal.getName() : request.getUsername();
         if (username == null || username.isBlank()) {
-            throw new RuntimeException("Kullanıcı bilgisi bulunamadı.");
+            throw new RuntimeException("User information could not be determined.");
         }
         userService.changePassword(username, request);
-        return ResponseEntity.ok(Map.of("message", "Şifre başarıyla değiştirildi."));
+        return ResponseEntity.ok(Map.of("message", "Password changed successfully."));
     }
 
     @DeleteMapping("/{id}")

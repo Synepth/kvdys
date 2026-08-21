@@ -7,7 +7,7 @@ import { AssetCreateRequest, AssetResponse } from '../../models/asset';
   providedIn: 'root'
 })
 export class AssetService {
-  private apiUrl = 'http://localhost:8080/api/assets';
+  private apiUrl = 'http://localhost:8080/api/v1/assets';
 
   constructor(private http: HttpClient) {}
 

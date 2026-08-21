@@ -1,50 +1,66 @@
 import { Routes } from '@angular/router';
+import { authGuard, noAuthGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
+    path: 'login',
+    loadComponent: () =>
+      import('./features/auth/login/login.component').then(
+        (m) => m.LoginComponent
+      ),
+    canActivate: [noAuthGuard]
+  },
+  {
     path: '',
-    loadComponent: () =>
-      import('./dashboard/dashboard.component').then(
-        (m) => m.DashboardComponent
-      ),
-  },
-  {
-    path: 'assets',
-    loadComponent: () =>
-      import('./features/assets/assets.component').then(
-        (m) => m.AssetsComponent
-      ),
-  },
-  {
-    path: 'tickets',
-    loadComponent: () =>
-      import('./features/tickets/tickets.component').then(
-        (m) => m.TicketsComponent
-      ),
-  },
-  {
-    path: 'users',
-    loadComponent: () =>
-      import('./features/users/users.component').then(
-        (m) => m.UsersComponent
-      ),
-  },
-  {
-    path: 'departments',
-    loadComponent: () =>
-      import('./features/departments/departments.component').then(
-        (m) => m.DepartmentsComponent
-      ),
-  },
-  {
-    path: 'roles',
-    loadComponent: () =>
-      import('./features/roles/roles.component').then(
-        (m) => m.RolesComponent
-      ),
+    canActivate: [authGuard],
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./dashboard/dashboard.component').then(
+            (m) => m.DashboardComponent
+          ),
+      },
+      {
+        path: 'assets',
+        loadComponent: () =>
+          import('./features/assets/assets.component').then(
+            (m) => m.AssetsComponent
+          ),
+      },
+      {
+        path: 'tickets',
+        loadComponent: () =>
+          import('./features/tickets/tickets.component').then(
+            (m) => m.TicketsComponent
+          ),
+      },
+      {
+        path: 'users',
+        loadComponent: () =>
+          import('./features/users/users.component').then(
+            (m) => m.UsersComponent
+          ),
+      },
+      {
+        path: 'departments',
+        loadComponent: () =>
+          import('./features/departments/departments.component').then(
+            (m) => m.DepartmentsComponent
+          ),
+      },
+      {
+        path: 'roles',
+        loadComponent: () =>
+          import('./features/roles/roles.component').then(
+            (m) => m.RolesComponent
+          ),
+      }
+    ]
   },
   {
     path: '**',
     redirectTo: '',
   },
 ];
+

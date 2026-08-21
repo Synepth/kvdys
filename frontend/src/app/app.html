@@ -1,19 +1,26 @@
-<div class="d-flex flex-column vh-100 style-wrapper">
-  <app-navbar></app-navbar>
+@if (authService.isLoggedIn()) {
+  <div class="d-flex flex-column vh-100 style-wrapper">
+    <app-navbar></app-navbar>
 
-  <div class="d-flex flex-grow-1 overflow-hidden">
+    <div class="d-flex flex-grow-1 overflow-hidden">
+      <div class="bg-light border-end sidebar-container" style="width: 240px; flex-shrink: 0;">
+        <app-sidebar></app-sidebar>
+      </div>
 
-    <div class="bg-light border-end sidebar-container" style="width: 240px; flex-shrink: 0;">
-      <app-sidebar></app-sidebar>
+      <main class="flex-grow-1 p-4 overflow-auto bg-body-tertiary">
+        <router-outlet></router-outlet>
+      </main>
     </div>
 
-    <main class="flex-grow-1 p-4 overflow-auto bg-body-tertiary">
-      <router-outlet></router-outlet>
-    </main>
+    <div class="bg-light border-top" style="flex-shrink: 0;">
+      <app-footer></app-footer>
+    </div>
+    <app-toast-container></app-toast-container>
   </div>
+} @else {
+  <div class="vh-100 w-100 overflow-auto bg-body-tertiary">
+    <router-outlet></router-outlet>
+    <app-toast-container></app-toast-container>
+  </div>
+}
 
-  <div class="bg-light border-top" style="flex-shrink: 0;">
-    <app-footer></app-footer>
-  </div>
-  <app-toast-container></app-toast-container>
-</div>
