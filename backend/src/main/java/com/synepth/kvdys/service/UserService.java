@@ -1,6 +1,7 @@
 package com.synepth.kvdys.service;
 
 import com.synepth.kvdys.dto.ChangePasswordRequest;
+import com.synepth.kvdys.dto.ProfileUpdateRequest;
 import com.synepth.kvdys.dto.UserCreateRequest;
 import com.synepth.kvdys.dto.UserResponse;
 import com.synepth.kvdys.dto.UserUpdateRequest;
@@ -122,6 +123,46 @@ public class UserService {
         userRepository.save(user);
     }
 
+    @Transactional(readOnly = true)
+    public UserResponse getUserByUsername(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+        return mapToResponse(user);
+    }
+
+    @Transactional(readOnly = true)
+    public UserResponse getUserById(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+        return mapToResponse(user);
+    }
+
+    @Transactional
+    public UserResponse updateProfile(String username, ProfileUpdateRequest request) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+
+        if (!user.getEmail().equals(request.getEmail()) && userRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("This email is already in use.");
+        }
+
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setEmail(request.getEmail());
+
+        User updatedUser = userRepository.save(user);
+        return mapToResponse(updatedUser);
+    }
+
+    @Transactional
+    public UserResponse updateAvatarUrl(String username, String avatarUrl) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+        user.setAvatarUrl(avatarUrl);
+        User updatedUser = userRepository.save(user);
+        return mapToResponse(updatedUser);
+    }
+
     private Department getDepartmentById(Long departmentId) {
         return departmentRepository.findById(departmentId)
                 .orElseThrow(() -> new RuntimeException("Department not found: " + departmentId));
@@ -140,6 +181,9 @@ public class UserService {
         response.setId(user.getId());
         response.setUsername(user.getUsername());
         response.setEmail(user.getEmail());
+        response.setFirstName(user.getFirstName());
+        response.setLastName(user.getLastName());
+        response.setAvatarUrl(user.getAvatarUrl());
         if (user.getDepartment() != null) {
             response.setDepartmentName(user.getDepartment().getName());
         }

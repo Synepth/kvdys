@@ -14,7 +14,7 @@
           <span class="fw-semibold small">{{ authService.username() || 'User' }}</span>
         </button>
         <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
-          <li><a class="dropdown-item small" href="#"><i class="bi bi-person me-2"></i>My Profile</a></li>
+          <li><a class="dropdown-item small" routerLink="/profile"><i class="bi bi-person me-2"></i>My Profile</a></li>
           <li>
             <button class="dropdown-item small" type="button" data-bs-toggle="modal" data-bs-target="#changePasswordModal" (click)="openChangePasswordModal()">
               <i class="bi bi-key me-2"></i>Change Password

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { UserResponse, UserCreateRequest, UserUpdateRequest, ChangePasswordRequest, Page } from '../../models/user';
+import { UserResponse, UserCreateRequest, UserUpdateRequest, ChangePasswordRequest, Page, ProfileUpdateRequest } from '../../models/user';
 @Injectable({
   providedIn: 'root'
 })
@@ -34,6 +34,24 @@ export class UserService {
 
   changePassword(request: ChangePasswordRequest): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(`${this.apiUrl}/change-password`, request);
+  }
+
+  getProfile(): Observable<UserResponse> {
+    return this.http.get<UserResponse>(`${this.apiUrl}/me`);
+  }
+
+  updateProfile(request: ProfileUpdateRequest): Observable<UserResponse> {
+    return this.http.put<UserResponse>(`${this.apiUrl}/me`, request);
+  }
+
+  uploadAvatar(file: File): Observable<UserResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<UserResponse>(`${this.apiUrl}/me/avatar`, formData);
+  }
+
+  deleteAvatar(): Observable<UserResponse> {
+    return this.http.delete<UserResponse>(`${this.apiUrl}/me/avatar`);
   }
 
 }
