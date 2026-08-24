@@ -51,6 +51,24 @@ export class AuthService {
     return currentRoles.includes(role) || currentRoles.includes(`ROLE_${role}`);
   }
 
+  updateStoredEmail(email: string): void {
+    const user = this.currentUser();
+    if (user) {
+      const updated = { ...user, email };
+      localStorage.setItem(USER_KEY, JSON.stringify(updated));
+      this.currentUser.set(updated);
+    }
+  }
+
+  updateStoredAvatarUrl(avatarUrl: string | null): void {
+    const user = this.currentUser();
+    if (user) {
+      const updated = { ...user, avatarUrl };
+      localStorage.setItem(USER_KEY, JSON.stringify(updated));
+      this.currentUser.set(updated);
+    }
+  }
+
   private saveAuthData(data: LoginResponse): void {
     try {
       localStorage.setItem(TOKEN_KEY, data.token);
@@ -64,9 +82,30 @@ export class AuthService {
   private getStoredUser(): LoginResponse | null {
     try {
       const stored = localStorage.getItem(USER_KEY);
-      return stored ? (JSON.parse(stored) as LoginResponse) : null;
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (!stored || !token) return null;
+
+      // Clear session if token is expired — prevents ghost login state on startup
+      if (this.isTokenExpired(token)) {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+        return null;
+      }
+
+      return JSON.parse(stored) as LoginResponse;
     } catch {
       return null;
+    }
+  }
+
+  private isTokenExpired(token: string): boolean {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      // exp is in seconds, Date.now() is in milliseconds
+      return payload.exp * 1000 < Date.now();
+    } catch {
+      // If we can't decode it, treat it as expired
+      return true;
     }
   }
 }

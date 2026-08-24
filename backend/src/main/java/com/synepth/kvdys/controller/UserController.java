@@ -1,15 +1,18 @@
 package com.synepth.kvdys.controller;
 
 import com.synepth.kvdys.dto.ChangePasswordRequest;
+import com.synepth.kvdys.dto.ProfileUpdateRequest;
 import com.synepth.kvdys.dto.UserCreateRequest;
 import com.synepth.kvdys.dto.UserResponse;
 import com.synepth.kvdys.dto.UserUpdateRequest;
+import com.synepth.kvdys.service.FileStorageService;
 import com.synepth.kvdys.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
 import java.util.List;
@@ -25,6 +28,58 @@ import org.springframework.data.domain.Sort;
 public class UserController {
 
     private final UserService userService;
+    private final FileStorageService fileStorageService;
+
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> getCurrentUser(Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        UserResponse response = userService.getUserByUsername(principal.getName());
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<UserResponse> updateProfile(
+            Principal principal,
+            @Valid @RequestBody ProfileUpdateRequest request) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        UserResponse response = userService.updateProfile(principal.getName(), request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/me/avatar")
+    public ResponseEntity<UserResponse> uploadAvatar(
+            Principal principal,
+            @RequestParam("file") MultipartFile file) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        String avatarUrl = fileStorageService.storeAvatar(file);
+        UserResponse response = userService.updateAvatarUrl(principal.getName(), avatarUrl);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/me/avatar")
+    public ResponseEntity<UserResponse> deleteAvatar(Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        UserResponse currentUser = userService.getUserByUsername(principal.getName());
+        if (currentUser.getAvatarUrl() != null) {
+            fileStorageService.deleteAvatar(currentUser.getAvatarUrl());
+        }
+        UserResponse response = userService.updateAvatarUrl(principal.getName(), null);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
+        UserResponse response = userService.getUserById(id);
+        return ResponseEntity.ok(response);
+    }
 
     @PostMapping
     public ResponseEntity<UserResponse> createUser(@Valid @RequestBody UserCreateRequest request) {

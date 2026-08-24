@@ -2,8 +2,17 @@ export interface UserResponse {
   id: number;
   username: string;
   email: string;
+  firstName?: string;
+  lastName?: string;
+  avatarUrl?: string;
   departmentName?: string;
   roles?: string[];
+}
+
+export interface ProfileUpdateRequest {
+  firstName?: string;
+  lastName?: string;
+  email: string;
 }
 
 export interface UserCreateRequest {
