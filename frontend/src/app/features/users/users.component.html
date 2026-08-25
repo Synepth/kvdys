@@ -72,7 +72,12 @@
             @for (user of users; track user.id) {
               <tr>
                 <td>{{ user.id }}</td>
-                <td>{{ user.username }}</td>
+                <td>
+                  {{ user.username }}
+                  @if (isCurrentUser(user)) {
+                    <span class="badge bg-primary ms-1">You</span>
+                  }
+                </td>
                 <td>{{ user.email }}</td>
                 <td>{{ user.departmentName || '-' }}</td>
                 <td>
@@ -90,6 +95,8 @@
                   </button>
                   <button
                     class="btn btn-sm btn-outline-danger"
+                    [disabled]="isCurrentUser(user)"
+                    [title]="isCurrentUser(user) ? 'You cannot delete your own account' : 'Delete user'"
                     (click)="deleteUser(user.id)">
                     Delete
                   </button>
@@ -218,15 +225,17 @@
             }
           </div>
 
-          <!-- Role Selection Dropdown -->
-          <div class="mb-3">
-            <label class="form-label">Role</label>
-            <select class="form-select" formControlName="roleId">
-              @for (role of availableRoles; track role.id) {
-                <option [ngValue]="role.id">{{ role.name }}</option>
-              }
-            </select>
-          </div>
+          <!-- Role Selection Dropdown (Admin only) -->
+          @if (authService.isAdmin()) {
+            <div class="mb-3">
+              <label class="form-label">Role</label>
+              <select class="form-select" formControlName="roleId">
+                @for (role of availableRoles; track role.id) {
+                  <option [ngValue]="role.id">{{ role.name }}</option>
+                }
+              </select>
+            </div>
+          }
 
         </div>
 
