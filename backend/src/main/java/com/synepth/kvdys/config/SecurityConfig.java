@@ -50,6 +50,7 @@ public class SecurityConfig {
                         // Admin only
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/users").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/users/*").hasRole("ADMIN")
                         // Authenticated users
                         .anyRequest().authenticated()
                 )

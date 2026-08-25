@@ -7,7 +7,7 @@ import { DepartmentService, DepartmentResponse } from '../../core/services/depar
 import { UserResponse, UserCreateRequest, UserUpdateRequest } from '../../models/user';
 import { RoleService } from '../../core/services/role.service';
 import { RoleResponse } from '../../models/role';
-
+import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 
 @Component({
@@ -43,7 +43,8 @@ export class UsersComponent implements OnInit {
     private toastService: ToastService,
     private fb: FormBuilder,
     private cdr: ChangeDetectorRef,
-    private roleService: RoleService
+    private roleService: RoleService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -207,7 +208,16 @@ export class UsersComponent implements OnInit {
     }
   }
 
+  isCurrentUser(user: UserResponse): boolean {
+    return user.username === this.authService.username();
+  }
+
   deleteUser(id: number): void {
+    const user = this.users.find(u => u.id === id);
+    if (user && this.isCurrentUser(user)) {
+      this.toastService.error('You cannot delete your own account.');
+      return;
+    }
     if (confirm('Are you sure you want to delete this user?')) {
       this.userService.deleteUser(id).subscribe({
         next: () => {

@@ -9,6 +9,14 @@
     </button>
   </div>
 
+  <!-- Error Banner -->
+  @if (errorMessage) {
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ errorMessage }}
+      <button type="button" class="btn-close" (click)="errorMessage = null"></button>
+    </div>
+  }
+
   <!-- Search & Filter Bar -->
   <div class="card border-0 shadow-sm mb-4">
     <div class="card-body p-3">
@@ -60,7 +68,7 @@
               <tr>
                 <td class="fw-semibold">{{ asset.serialNumber }}</td>
                 <td>{{ asset.name }}</td>
-                <td><span class="badge bg-light text-dark border">{{ asset.type }}</span></td>
+                <td><span class="badge bg-light text-dark border">{{ getTypeLabel(asset.type) }}</span></td>
                 <td>
                   @if (asset.assignedUsername) {
                     <span class="d-flex align-items-center gap-2">
@@ -73,7 +81,7 @@
                 <td>{{ asset.departmentName || '-' }}</td>
                 <td>
                   <span class="badge rounded-pill px-3 py-2" [ngClass]="getStatusBadgeClass(asset.status)">
-                    {{ asset.status }}
+                    {{ getStatusLabel(asset.status) }}
                   </span>
                 </td>
                 <td class="text-end">
@@ -136,6 +144,24 @@
                 <option value="RETIRED">Inactive</option>
               </select>
             </div>
+            <div class="mb-3">
+              <label class="form-label">Assign to User <span class="text-muted">(optional)</span></label>
+              <select class="form-select" [(ngModel)]="newAsset.assignedUserId" name="assignedUserId">
+                <option [ngValue]="null">— Unassigned —</option>
+                @for (user of users; track user.id) {
+                  <option [ngValue]="user.id">{{ user.username }}</option>
+                }
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Department <span class="text-muted">(optional)</span></label>
+              <select class="form-select" [(ngModel)]="newAsset.departmentId" name="departmentId">
+                <option [ngValue]="null">— None —</option>
+                @for (dept of departments; track dept.id) {
+                  <option [ngValue]="dept.id">{{ dept.name }}</option>
+                }
+              </select>
+            </div>
             <div class="modal-footer px-0 pb-0">
               <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
               <button type="submit" class="btn btn-primary" data-bs-dismiss="modal">Save Asset</button>
@@ -181,6 +207,24 @@
                 <option value="RETIRED">Inactive</option>
               </select>
             </div>
+            <div class="mb-3">
+              <label class="form-label">Assign to User <span class="text-muted">(optional)</span></label>
+              <select class="form-select" [(ngModel)]="editAssetModel.assignedUserId" name="editAssignedUserId">
+                <option [ngValue]="null">— Unassigned —</option>
+                @for (user of users; track user.id) {
+                  <option [ngValue]="user.id">{{ user.username }}</option>
+                }
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Department <span class="text-muted">(optional)</span></label>
+              <select class="form-select" [(ngModel)]="editAssetModel.departmentId" name="editDepartmentId">
+                <option [ngValue]="null">— None —</option>
+                @for (dept of departments; track dept.id) {
+                  <option [ngValue]="dept.id">{{ dept.name }}</option>
+                }
+              </select>
+            </div>
             <div class="modal-footer px-0 pb-0">
               <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
               <button type="submit" class="btn btn-primary" data-bs-dismiss="modal">Update Changes</button>
@@ -204,10 +248,15 @@
             <div class="mb-2"><strong>ID:</strong> {{ selectedAsset.id }}</div>
             <div class="mb-2"><strong>Asset Name:</strong> {{ selectedAsset.name }}</div>
             <div class="mb-2"><strong>Serial Number:</strong> {{ selectedAsset.serialNumber }}</div>
-            <div class="mb-2"><strong>Type:</strong> {{ selectedAsset.type }}</div>
+            <div class="mb-2"><strong>Type:</strong> {{ getTypeLabel(selectedAsset.type) }}</div>
             <div class="mb-2"><strong>Department:</strong> {{ selectedAsset.departmentName || 'N/A' }}</div>
             <div class="mb-2"><strong>Assigned User:</strong> {{ selectedAsset.assignedUsername || 'Unassigned' }}</div>
-            <div class="mb-2"><strong>Status:</strong> {{ selectedAsset.status }}</div>
+            <div class="mb-2">
+              <strong>Status:</strong>
+              <span class="badge rounded-pill px-3 py-2 ms-1" [ngClass]="getStatusBadgeClass(selectedAsset.status)">
+                {{ getStatusLabel(selectedAsset.status) }}
+              </span>
+            </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
