@@ -44,7 +44,7 @@ export class UsersComponent implements OnInit {
     private fb: FormBuilder,
     private cdr: ChangeDetectorRef,
     private roleService: RoleService,
-    private authService: AuthService
+    public authService: AuthService
   ) {}
 
   ngOnInit(): void {

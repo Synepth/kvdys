@@ -8,11 +8,10 @@ import com.synepth.kvdys.entity.User;
 import com.synepth.kvdys.repository.AssetRepository;
 import com.synepth.kvdys.repository.DepartmentRepository;
 import com.synepth.kvdys.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class AssetService {
@@ -27,13 +26,13 @@ public class AssetService {
         this.userRepository = userRepository;
     }
 
-    @Transactional
-    public List<AssetResponse> getAllAssets() {
-        return assetRepository.findAll().stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+    @Transactional(readOnly = true)
+    public Page<AssetResponse> getAllAssets(String search, String status, String category, Pageable pageable) {
+        return assetRepository.findByFilters(search, status, category, pageable)
+                .map(this::mapToResponse);
     }
 
+    @Transactional
     public AssetResponse createAsset(AssetCreateRequest request) {
         if (assetRepository.existsBySerialNumber(request.getSerialNumber())) {
             throw new RuntimeException("Asset with this serial number already exists.");
@@ -41,6 +40,8 @@ public class AssetService {
 
         Asset asset = new Asset();
         asset.setName(request.getName());
+        asset.setBrand(request.getBrand());
+        asset.setModel(request.getModel());
         asset.setSerialNumber(request.getSerialNumber());
         asset.setType(request.getType());
         asset.setStatus(request.getStatus());
@@ -65,6 +66,8 @@ public class AssetService {
                 .orElseThrow(() -> new RuntimeException("Asset not found."));
 
         asset.setName(request.getName());
+        asset.setBrand(request.getBrand());
+        asset.setModel(request.getModel());
         asset.setSerialNumber(request.getSerialNumber());
         asset.setType(request.getType());
         asset.setStatus(request.getStatus());
@@ -94,6 +97,16 @@ public class AssetService {
     private AssetResponse mapToResponse(Asset asset) {
         String deptName = asset.getDepartment() != null ? asset.getDepartment().getName() : null;
         String username = asset.getAssignedUser() != null ? asset.getAssignedUser().getUsername() : null;
-        return new AssetResponse(asset.getId(), asset.getName(), asset.getSerialNumber(), asset.getType(), asset.getStatus(), deptName, username);
+        return new AssetResponse(
+                asset.getId(),
+                asset.getName(),
+                asset.getBrand(),
+                asset.getModel(),
+                asset.getSerialNumber(),
+                asset.getType(),
+                asset.getStatus(),
+                deptName,
+                username
+        );
     }
 }

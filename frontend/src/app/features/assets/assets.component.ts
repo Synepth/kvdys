@@ -15,18 +15,29 @@ import { DepartmentService, DepartmentResponse } from '../../core/services/depar
   templateUrl: './assets.component.html'
 })
 export class AssetsComponent implements OnInit {
-  searchTerm = '';
-  selectedCategory = 'All Categories';
 
+  // Table data
   assets: AssetResponse[] = [];
   selectedAsset: AssetResponse | null = null;
 
+  // Dropdown data
   users: UserResponse[] = [];
   departments: DepartmentResponse[] = [];
 
+  // Filter state
+  searchTerm = '';
+  selectedStatus = '';
+  selectedCategory = '';
+
+  // Pagination state
+  currentPage = 0;
+  pageSize = 10;
+  totalPages = 0;
+  totalElements = 0;
+
+  // Forms
   editAssetModel: AssetCreateRequest = this.getEmptyAssetRequest();
   editAssetId: number | null = null;
-
   newAsset: AssetCreateRequest = this.getEmptyAssetRequest();
 
   errorMessage: string | null = null;
@@ -42,11 +53,36 @@ export class AssetsComponent implements OnInit {
     this.loadDropdownData();
   }
 
-  loadAssets(): void {
-    this.assetService.getAllAssets().subscribe({
-      next: (data) => { this.assets = data; },
+  loadAssets(page = this.currentPage): void {
+    this.assetService.getAllAssets(page, this.pageSize, this.searchTerm, this.selectedStatus, this.selectedCategory).subscribe({
+      next: (data) => {
+        this.assets = data.content;
+        this.totalPages = data.totalPages;
+        this.totalElements = data.totalElements;
+        this.currentPage = data.number;
+      },
       error: () => this.showError('Failed to load assets.')
     });
+  }
+
+  onFilterChange(): void {
+    this.loadAssets(0);
+  }
+
+  clearFilters(): void {
+    this.searchTerm = '';
+    this.selectedStatus = '';
+    this.selectedCategory = '';
+    this.loadAssets(0);
+  }
+
+  goToPage(page: number): void {
+    if (page < 0 || page >= this.totalPages) return;
+    this.loadAssets(page);
+  }
+
+  get pages(): number[] {
+    return Array.from({ length: this.totalPages }, (_, i) => i);
   }
 
   loadDropdownData(): void {
@@ -62,25 +98,12 @@ export class AssetsComponent implements OnInit {
     });
   }
 
-  get filteredAssets(): AssetResponse[] {
-    return this.assets.filter(asset => {
-      const matchesSearch =
-        (asset.name?.toLowerCase() || '').includes(this.searchTerm.toLowerCase()) ||
-        (asset.serialNumber?.toLowerCase() || '').includes(this.searchTerm.toLowerCase()) ||
-        (asset.assignedUsername?.toLowerCase() || '').includes(this.searchTerm.toLowerCase());
-
-      const matchesCategory = this.selectedCategory === 'All Categories' || asset.type === this.selectedCategory;
-
-      return matchesSearch && matchesCategory;
-    });
-  }
-
   createAsset(): void {
     if (!this.newAsset.serialNumber || !this.newAsset.name) return;
 
     this.assetService.createAsset(this.newAsset).subscribe({
       next: () => {
-        this.loadAssets();
+        this.loadAssets(this.currentPage);
         this.newAsset = this.getEmptyAssetRequest();
       },
       error: (err) => this.showError(err?.error?.message || 'Failed to create asset.')
@@ -99,6 +122,8 @@ export class AssetsComponent implements OnInit {
 
     this.editAssetModel = {
       name: asset.name,
+      brand: asset.brand,
+      model: asset.model,
       serialNumber: asset.serialNumber,
       type: asset.type,
       status: asset.status,
@@ -112,7 +137,7 @@ export class AssetsComponent implements OnInit {
 
     this.assetService.updateAsset(this.editAssetId, this.editAssetModel).subscribe({
       next: () => {
-        this.loadAssets();
+        this.loadAssets(this.currentPage);
         this.editAssetId = null;
         this.editAssetModel = this.getEmptyAssetRequest();
       },
@@ -123,7 +148,7 @@ export class AssetsComponent implements OnInit {
   deleteAsset(id: number, serialNumber: string): void {
     if (confirm(`Asset with serial number ${serialNumber} will be deleted. Are you sure?`)) {
       this.assetService.deleteAsset(id).subscribe({
-        next: () => this.loadAssets(),
+        next: () => this.loadAssets(this.currentPage),
         error: () => this.showError('Failed to delete asset.')
       });
     }
@@ -164,9 +189,11 @@ export class AssetsComponent implements OnInit {
   private getEmptyAssetRequest(): AssetCreateRequest {
     return {
       name: '',
+      brand: '',
+      model: '',
       serialNumber: '',
-      type: 'LAPTOP',
-      status: 'ACTIVE',
+      type: '',
+      status: '',
       departmentId: null,
       assignedUserId: null
     };
