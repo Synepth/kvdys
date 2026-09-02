@@ -1,276 +1,268 @@
 # KVDYS — Corporate Asset and Support Management System
 
-KVDYS is an enterprise web application for managing corporate assets, users, departments, roles, and support tickets. The repository is organized as a backend/frontend monorepo.
-
-## Tech Stack
-
-| Layer | Technology |
-|:------|:-----------|
-| **Backend** | Java 21, Spring Boot 4.x, Maven, PostgreSQL 18 |
-| **Frontend** | Angular 22+, TypeScript, Bootstrap 5, Bootstrap Icons |
-| **ORM** | Hibernate / Spring Data JPA |
-| **Security** | Spring Security 6, JWT (JJWT 0.12.6), BCrypt |
-| **API Docs** | SpringDoc OpenAPI (Swagger UI at `/swagger-ui.html`) |
+KVDYS is an enterprise-grade web application for managing corporate IT assets, users, departments, roles, and support requests. The repository is organized as a full-stack backend/frontend monorepo.
 
 ---
 
-## Project Structure
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|:------|:-----------|
+| **Backend** | Java 17/21, Spring Boot 4.0.7, Maven, PostgreSQL |
+| **Frontend** | Angular 22+, TypeScript, RxJS, Bootstrap 5.3+, Bootstrap Icons |
+| **ORM & Database** | Hibernate / Spring Data JPA, PostgreSQL Dialect |
+| **Security** | Spring Security 6, JWT (`jjwt` 0.12.6), BCrypt Hashing, Stateless Sessions |
+| **API Docs** | SpringDoc OpenAPI 3.0.2 (Swagger UI at `/swagger-ui.html`) |
+
+---
+
+## 📁 Project Structure
 
 ```text
 kvdys/
-├── backend/                        # Spring Boot REST API
+├── backend/                                # Spring Boot REST API
 │   └── src/main/java/com/synepth/kvdys/
-│       ├── config/                 # SecurityConfig, WebConfig (CORS, static resources)
-│       ├── controller/             # REST controllers (Auth, User, Department, Role, Asset, Ticket)
-│       ├── dto/                    # Request & Response DTOs
-│       ├── entity/                 # JPA entities
-│       ├── repository/             # Spring Data JPA repositories
-│       ├── security/               # JwtUtil, JwtAuthFilter, UserDetailsServiceImpl
-│       ├── service/                # Business logic + FileStorageService
-│       └── DataInitializer.java    # Seeds default roles & admin user
-├── frontend/                       # Angular standalone application
+│       ├── config/                         # SecurityConfig (CORS, CSRF, URL rules), WebConfig
+│       ├── controller/                     # REST Controllers (Auth, User, Department, Role, Asset, Dashboard, Health)
+│       ├── dto/                            # Request & Response DTOs
+│       ├── entity/                         # JPA Entities (User, Role, Department, Asset)
+│       ├── exception/                      # GlobalExceptionHandler
+│       ├── repository/                     # Spring Data JPA Repositories
+│       ├── security/                       # JwtUtil, JwtAuthFilter, UserDetailsServiceImpl
+│       ├── service/                        # Business Services & FileStorageService
+│       └── DataInitializer.java            # Seeds default roles (ADMIN, USER) & initial admin
+│   └── src/main/resources/
+│       └── application.properties          # DB, JWT, Multipart & Server config
+├── frontend/                               # Angular Standalone Application
 │   └── src/app/
 │       ├── core/
-│       │   ├── guards/             # authGuard, noAuthGuard
-│       │   ├── interceptors/       # JWT auth interceptor (auto-attach token, 401 handling)
-│       │   └── services/           # AuthService, UserService, DepartmentService, etc.
-│       ├── dashboard/              # Dashboard overview page
+│       │   ├── guards/                     # authGuard, adminGuard, noAuthGuard
+│       │   ├── interceptors/               # authInterceptor (JWT header injection & 401 handling)
+│       │   └── services/                   # AuthService, UserService, DepartmentService, RoleService, AssetService, DashboardService, ToastService
+│       ├── dashboard/                      # Dashboard metrics, recent assets & stats
 │       ├── features/
-│       │   ├── assets/             # Asset management
-│       │   ├── auth/login/         # Login page
-│       │   ├── departments/        # Department management
-│       │   ├── profile/            # Profile page (edit info + avatar upload)
-│       │   ├── roles/              # Role management
-│       │   ├── tickets/            # Support tickets
-│       │   └── users/              # User management
-│       ├── models/                 # TypeScript interfaces
-│       └── shared/components/      # Navbar, Sidebar, Footer, Toast
+│       │   ├── assets/                     # Asset inventory management (CRUD, filters, assignment)
+│       │   ├── auth/login/                 # Reactive login form with validation & returnUrl
+│       │   ├── departments/                # Department management & user association
+│       │   ├── profile/                    # Profile details, avatar upload/removal & password change
+│       │   ├── roles/                      # Role management & system role protection
+│       │   ├── tickets/                    # Support ticket management UI
+│       │   └── users/                      # User management (CRUD, role/dept assignment, filters)
+│       ├── models/                         # TypeScript interfaces (Auth, User, Role, Department, Asset, Dashboard)
+│       └── shared/components/              # Navbar, Sidebar, Footer, Toast notifications
 └── README.md
 ```
 
 ---
 
-## Security Architecture
+## 🔒 Security Architecture
 
-### Authentication Flow
+### Authentication & Token Flow
 
 ```text
-1. User submits credentials → POST /api/v1/auth/login
-2. Backend validates via DaoAuthenticationProvider + BCrypt
-3. On success → JwtUtil generates a signed JWT (HMAC-SHA, 24h expiry)
-4. Token returned to frontend → stored in localStorage
-5. Every subsequent API request → authInterceptor attaches "Authorization: Bearer <token>"
-6. JwtAuthFilter validates token on each request → sets SecurityContext
-7. On 401 → interceptor auto-calls logout() → redirects to /login
+1. User submits credentials           → POST /api/v1/auth/login
+2. DaoAuthenticationProvider + BCrypt → Validates credentials against DB
+3. JwtUtil                            → Generates signed HMAC-SHA JWT (24h validity)
+4. Frontend AuthService               → Stores token & user data in localStorage + signals state
+5. authInterceptor                    → Automatically attaches "Authorization: Bearer <token>" to API calls
+6. JwtAuthFilter (Backend)            → Intercepts request, extracts & validates JWT via JwtUtil, sets SecurityContext
+7. 401 Response on token expiry       → authInterceptor triggers auto-logout & redirects to /login
 ```
 
-### Backend (Spring Security)
+### Backend Security Configuration (`SecurityConfig`)
 
-| Component | Description |
-|:----------|:------------|
-| `SecurityConfig` | Stateless session, CSRF disabled, CORS for `localhost:4200`, URL-based authorization rules |
-| `JwtUtil` | Token generation (HMAC-SHA), extraction, and validation using JJWT 0.12.6 |
-| `JwtAuthFilter` | `OncePerRequestFilter` — parses `Bearer` token, validates, and sets authentication |
-| `UserDetailsServiceImpl` | Loads user + roles from DB for Spring Security |
-| `BCryptPasswordEncoder` | Password hashing for storage and verification |
+- **Stateless Session Management**: `SessionCreationPolicy.STATELESS`
+- **CSRF**: Disabled for REST API usage
+- **CORS**: Configured for `http://localhost:4200` with standard HTTP methods
+- **Filter Chain**: `JwtAuthFilter` injected before `UsernamePasswordAuthenticationFilter`
 
-**Authorization Rules:**
+**Authorization Matrix:**
 
-| Rule | Endpoints |
-|:-----|:----------|
-| **Public** | `/api/v1/auth/**`, `/api/v1/health`, `/swagger-ui/**`, `/v3/api-docs/**`, `/uploads/**` |
-| **Admin only** | `DELETE /api/v1/**` (except avatar), `POST /api/v1/users` (create user) |
-| **Authenticated** | All other endpoints |
+| Access Level | HTTP Method & Endpoints |
+|:-------------|:------------------------|
+| **Public** | `POST /api/v1/auth/**`, `GET /api/v1/health`, `/swagger-ui/**`, `/v3/api-docs/**`, `/uploads/**` |
+| **Self / Authenticated** | `GET/PUT /api/v1/users/me`, `POST/DELETE /api/v1/users/me/avatar`, `POST /api/v1/users/change-password` |
+| **Admin Only (`ROLE_ADMIN`)** | `POST /api/v1/users`, `PUT /api/v1/users/{id}`, `DELETE /api/v1/**` (except user avatar) |
+| **Authenticated Users** | `GET /api/v1/dashboard/stats`, `GET/POST/PUT /api/v1/assets/**`, `GET/POST/PUT /api/v1/departments/**`, `GET/POST/PUT /api/v1/roles/**`, `GET /api/v1/users/**` |
 
-### Frontend (Angular)
+### Frontend Route Protection & Interceptors
 
-| Component | Description |
-|:----------|:------------|
-| `AuthService` | Signals-based auth state (`currentUser`, `isLoggedIn`, `isAdmin`), login/logout, localStorage management |
-| `authGuard` | Blocks unauthenticated users → redirects to `/login` with `returnUrl` |
-| `noAuthGuard` | Blocks authenticated users from accessing `/login` → redirects to `/` |
-| `authInterceptor` | Attaches JWT to API requests, excludes auth endpoints, auto-logout on 401 |
-| **Token expiry check** | `AuthService` decodes JWT `exp` claim on startup — clears stale sessions to prevent ghost login |
+- **`authGuard`**: Protects all internal routes (`/`, `/assets`, `/tickets`, `/profile`, `/users`, `/departments`, `/roles`); redirects unauthenticated users to `/login?returnUrl=...`.
+- **`adminGuard`**: Restricts administrative modules (`/users`, `/departments`, `/roles`) to accounts with `ROLE_ADMIN`.
+- **`noAuthGuard`**: Prevents already-logged-in users from accessing the `/login` route.
+- **`authInterceptor`**: Attaches Bearer token header to outgoing `/api` requests and handles global `401 Unauthorized` token expiry.
+- **Token Expiry Check**: `AuthService` parses JWT `exp` timestamp upon application startup to eliminate ghost sessions.
 
 ---
 
-## Current Features
+## 🚀 Implemented Features
 
-### ✅ Authentication & Authorization
-- Login page with form validation, password visibility toggle, loading state
-- JWT-based stateless authentication (24h token expiry)
-- Role-based access control (`ROLE_ADMIN`, `ROLE_USER`)
-- Route guards (auth + noAuth) protect all frontend routes
-- HTTP interceptor auto-attaches tokens and handles 401
-- Client-side JWT expiry check prevents stale session issues on app restart
+### ✅ Dashboard & Analytics
+- Live KPI cards: Total assets, active users, departments, and support tickets
+- Asset status distribution breakdown (Active, In Repair, Retired)
+- Department asset allocation progress bars
+- Quick-view table of recently added corporate assets
 
-### ✅ User Management
-- List users with search and department filter (paginated)
-- Create, edit, and delete users
-- Assign department and roles per user
-- Reactive Forms with inline validation
-
-### ✅ Profile & Avatar
-- Dedicated profile page (`/profile`) accessible from navbar dropdown
-- Edit first name, last name, and email
-- Avatar upload (JPEG, PNG, GIF, WebP — max 5MB) with live preview
-- Remove avatar with fallback to initials
-- Read-only display of username, department, and roles
-- Auth state synced after profile/avatar changes
-
-### ✅ Password Change
-- Modal dialog accessible from navbar dropdown
-- Current password verification, min-length validation, match confirmation
-- Toast notifications on success/error
-
-### ✅ Department Management
-- List departments with search (paginated)
-- Create, edit, and delete departments
-- Shows assigned user count per department
-- Prevents deletion if users are assigned
-
-### ✅ Role Management
-- List all roles with assigned user count
-- Create, edit, and delete roles
-- System roles (`ROLE_ADMIN`, `ROLE_USER`) are protected from deletion
-- Prevents deletion if users are currently assigned
+### ✅ Authentication & Session Management
+- Reactive login form with client-side validation and password visibility toggle
+- JWT-based authentication with automatic local storage sync
+- Signal-based auth state (`currentUser`, `isLoggedIn`, `isAdmin`, `roles`, `username`)
+- Automatic session cleanup on token expiration
 
 ### ✅ Asset Management
-- List, create, edit, and delete assets
-- Filter by name, serial number, assigned user, and category
+- Paginated asset catalog with server-side pagination and sorting
+- Real-time search across asset name, brand, model, and serial number
+- Filters by asset category (`LAPTOP`, `MONITOR`, `KEYBOARD`, `OTHER`) and status (`ACTIVE`, `IN_REPAIR`, `RETIRED`)
+- Full CRUD operations with modal forms
+- Direct assignment of assets to specific users and departments
+- Modal view for asset details and specifications
 
-### ⏳ Tickets (In Progress)
-- Support ticket management
+### ✅ User Management (Admin)
+- Paginated user list with search by username/email and department filtering
+- Create, edit, and delete user accounts
+- Assign department and role (`ROLE_ADMIN`, `ROLE_USER`) per user
+- Client-side and server-side validation for unique username/email
+- Safeguards to prevent deleting one's own active account
 
----
+### ✅ Profile & Avatar Management
+- Dedicated `/profile` route displaying user info and assigned system roles
+- Edit first name, last name, and email address
+- Avatar image upload (JPEG, PNG, GIF, WebP up to 5MB) with immediate preview
+- Avatar removal with fallback to user initials
+- Integrated password change modal with current-password verification and match validation
 
-## Getting Started
+### ✅ Department Management
+- Paginated department listing with search capabilities
+- Create, edit, and delete departments
+- Live assigned user count per department
+- Deletion protection preventing removal of departments that currently have assigned users
 
-### Prerequisites
-- Java 21+
-- Node.js 20+
-- PostgreSQL running on `localhost:5432`
+### ✅ Role Management
+- Paginated and flat listings of system roles
+- Create and edit custom roles
+- Assigned user count per role
+- Protection preventing deletion of core system roles (`ROLE_ADMIN`, `ROLE_USER`) and roles in active use
 
-### Backend Setup
+### ⏳ Support Tickets (UI Implemented / Backend In Progress)
+- Interactive ticket tracking interface with filter by status (`Open`, `In Review`, `Resolved`, `Cancelled`)
+- Search by title, requestor, and ticket ID
+- Priority tags (`Low`, `Medium`, `High`) and status badges
+- Create, edit, detail view, and delete ticket operations (currently in-memory client state)
 
-1. Create the database:
-   ```sql
-   CREATE DATABASE kvdysdb;
-   ```
-
-2. Update credentials in `backend/src/main/resources/application.properties` if needed:
-   ```properties
-   spring.datasource.url=jdbc:postgresql://localhost:5432/kvdysdb
-   spring.datasource.username=postgres
-   spring.datasource.password=yourpassword
-   ```
-
-3. Run the backend:
-   ```bash
-   cd backend
-   ./mvnw spring-boot:run
-   ```
-
-   The API will start at `http://localhost:8080`.
-   On first launch, `DataInitializer` seeds `ROLE_ADMIN`, `ROLE_USER`, and a default admin user.
-
-### Frontend Setup
-
-1. Install dependencies:
-   ```bash
-   cd frontend
-   npm install
-   ```
-
-2. Start the dev server:
-   ```bash
-   npm start
-   ```
-
-   The app will be available at `http://localhost:4200`.
+### ✅ Global UI / UX
+- Clean Bootstrap 5 responsive dashboard layout with collapsible sidebar and navbar
+- Toast notification service for success, error, and info alerts
+- Modern Angular standalone components and signals reactivity
 
 ---
 
-## API Endpoints
+## 🌐 API Endpoints Reference
 
-### Authentication
+### Authentication & Health
 
-| Method | Endpoint | Auth | Description |
-|:-------|:---------|:-----|:------------|
-| `POST` | `/api/v1/auth/login` | Public | Login — returns JWT + user info |
+| Method | Endpoint | Access | Description |
+|:-------|:---------|:-------|:------------|
+| `POST` | `/api/v1/auth/login` | Public | Authenticates user; returns JWT token and profile info |
+| `GET` | `/api/v1/health` | Public | Health check endpoint |
+
+### Dashboard
+
+| Method | Endpoint | Access | Description |
+|:-------|:---------|:-------|:------------|
+| `GET` | `/api/v1/dashboard/stats` | Authenticated | Aggregated system counts and asset status statistics |
 
 ### Users & Profile
 
-| Method | Endpoint | Auth | Description |
-|:-------|:---------|:-----|:------------|
-| `GET` | `/api/v1/users/me` | Authenticated | Get current user's profile |
-| `PUT` | `/api/v1/users/me` | Authenticated | Update profile (name, email) |
-| `POST` | `/api/v1/users/me/avatar` | Authenticated | Upload avatar image |
-| `DELETE` | `/api/v1/users/me/avatar` | Authenticated | Remove avatar |
-| `POST` | `/api/v1/users/change-password` | Authenticated | Change password |
-| `GET` | `/api/v1/users` | Authenticated | List users (paginated, filterable) |
+| Method | Endpoint | Access | Description |
+|:-------|:---------|:-------|:------------|
+| `GET` | `/api/v1/users/me` | Authenticated | Get current authenticated user profile |
+| `PUT` | `/api/v1/users/me` | Authenticated | Update profile details (first name, last name, email) |
+| `POST` | `/api/v1/users/me/avatar` | Authenticated | Upload multipart avatar image |
+| `DELETE` | `/api/v1/users/me/avatar` | Authenticated | Delete profile avatar image |
+| `POST` | `/api/v1/users/change-password` | Authenticated | Change password with current password verification |
+| `GET` | `/api/v1/users` | Authenticated | Paginated user list (`page`, `size`, `search`, `departmentId`) |
 | `GET` | `/api/v1/users/{id}` | Authenticated | Get user by ID |
-| `POST` | `/api/v1/users` | Admin | Create user |
-| `PUT` | `/api/v1/users/{id}` | Authenticated | Update user |
-| `DELETE` | `/api/v1/users/{id}` | Admin | Delete user |
+| `POST` | `/api/v1/users` | Admin | Create a new user account |
+| `PUT` | `/api/v1/users/{id}` | Admin | Update user information and roles |
+| `DELETE` | `/api/v1/users/{id}` | Admin | Delete a user account |
 
 ### Departments
 
-| Method | Endpoint | Auth | Description |
-|:-------|:---------|:-----|:------------|
-| `GET` | `/api/v1/departments` | Authenticated | List departments (paginated) |
-| `GET` | `/api/v1/departments/all` | Authenticated | List all departments (flat) |
-| `POST` | `/api/v1/departments` | Authenticated | Create department |
-| `PUT` | `/api/v1/departments/{id}` | Authenticated | Update department |
-| `DELETE` | `/api/v1/departments/{id}` | Admin | Delete department |
+| Method | Endpoint | Access | Description |
+|:-------|:---------|:-------|:------------|
+| `GET` | `/api/v1/departments` | Authenticated | List departments (paginated, search filter) |
+| `GET` | `/api/v1/departments/all` | Authenticated | Flat list of all departments (for dropdown selection) |
+| `POST` | `/api/v1/departments` | Authenticated | Create a department |
+| `PUT` | `/api/v1/departments/{id}` | Authenticated | Update department details |
+| `DELETE` | `/api/v1/departments/{id}` | Admin | Delete department (blocked if users assigned) |
 
 ### Roles
 
-| Method | Endpoint | Auth | Description |
-|:-------|:---------|:-----|:------------|
-| `GET` | `/api/v1/roles/all` | Authenticated | List all roles (flat) |
-| `POST` | `/api/v1/roles` | Authenticated | Create role |
-| `PUT` | `/api/v1/roles/{id}` | Authenticated | Update role |
-| `DELETE` | `/api/v1/roles/{id}` | Admin | Delete role |
+| Method | Endpoint | Access | Description |
+|:-------|:---------|:-------|:------------|
+| `GET` | `/api/v1/roles` | Authenticated | List roles (paginated, search filter) |
+| `GET` | `/api/v1/roles/all` | Authenticated | Flat list of all roles (for dropdown selection) |
+| `POST` | `/api/v1/roles` | Authenticated | Create a role |
+| `PUT` | `/api/v1/roles/{id}` | Authenticated | Update role details |
+| `DELETE` | `/api/v1/roles/{id}` | Admin | Delete role (system roles & assigned roles protected) |
 
 ### Assets
 
-| Method | Endpoint | Auth | Description |
-|:-------|:---------|:-----|:------------|
-| `GET` | `/api/v1/assets` | Authenticated | List all assets |
-| `POST` | `/api/v1/assets` | Authenticated | Create asset |
-| `PUT` | `/api/v1/assets/{id}` | Authenticated | Update asset |
+| Method | Endpoint | Access | Description |
+|:-------|:---------|:-------|:------------|
+| `GET` | `/api/v1/assets` | Authenticated | Paginated asset list (`page`, `size`, `search`, `status`, `category`) |
+| `GET` | `/api/v1/assets/recent` | Authenticated | Get recent 5 assets for dashboard |
+| `POST` | `/api/v1/assets` | Authenticated | Create a new asset |
+| `PUT` | `/api/v1/assets/{id}` | Authenticated | Update existing asset |
 | `DELETE` | `/api/v1/assets/{id}` | Admin | Delete asset |
 
-Full interactive API docs: `http://localhost:8080/swagger-ui.html`
+*Swagger UI interactive documentation available at:* `http://localhost:8080/swagger-ui.html`
 
 ---
 
-## Configuration
+## ⚙️ Getting Started
 
-Key properties in `backend/src/main/resources/application.properties`:
+### Prerequisites
+- **Java**: JDK 17 or 21
+- **Node.js**: v20+ and npm
+- **Database**: PostgreSQL instance running locally on port `5432`
 
-| Property | Default | Description |
-|:---------|:--------|:------------|
-| `jwt.secret` | `kvdys-super-secret-...` | HMAC signing key (min 32 chars) |
-| `jwt.expiration` | `86400000` | Token lifetime in ms (24 hours) |
-| `spring.servlet.multipart.max-file-size` | `5MB` | Max avatar upload size |
-| `upload.path` | `uploads/avatars` | Avatar storage directory |
+### 1. Database Setup
+```sql
+CREATE DATABASE kvdysdb;
+```
 
-> ⚠️ **Production checklist:**
-> - Change `jwt.secret` to a strong, unique key
-> - Change the default admin password
-> - Update `spring.datasource.password`
-> - Update CORS origins in `SecurityConfig` to your production domain
+### 2. Backend Configuration & Launch
+Verify `backend/src/main/resources/application.properties`:
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/kvdysdb
+spring.datasource.username=postgres
+spring.datasource.password=yourpassword
+```
+
+Start the Spring Boot backend:
+```bash
+cd backend
+./mvnw spring-boot:run
+```
+Backend starts on: `http://localhost:8080`
+*(On first launch, `DataInitializer` automatically seeds default roles and an initial administrator account).*
+
+### 3. Frontend Setup & Launch
+```bash
+cd frontend
+npm install
+npm start
+```
+Frontend starts on: `http://localhost:4200`
 
 ---
 
-## Default Credentials
+## 👤 Default Credentials
 
-| Field | Value |
-|:------|:------|
-| Username | `admin` |
-| Password | `password` |
-| Role | `ROLE_ADMIN` |
+| Username | Password | Role |
+|:---------|:---------|:-----|
+| `admin` | `password` | `ROLE_ADMIN` |
 
-> ⚠️ Change the default admin password before deploying to production.
+> ⚠️ *Remember to change the default admin password via the profile menu when deploying to an environment.*
+

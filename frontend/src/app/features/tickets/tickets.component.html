@@ -153,47 +153,50 @@
 <!-- Modal 2: Show Details -->
 <div class="modal fade" id="detailTicketModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow" *ngIf="selectedTicket">
-      <div class="modal-header">
-        <h5 class="modal-title fw-bold">Request Details ({{ selectedTicket.id }})</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    @if (selectedTicket) {
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">Request Details ({{ selectedTicket.id }})</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <small class="text-secondary d-block">Subject</small>
+            <span class="fw-bold fs-6">{{ selectedTicket.title }}</span>
+          </div>
+          <div class="row mb-3">
+            <div class="col-6">
+              <small class="text-secondary d-block">Requested By</small>
+              <span class="fw-semibold">{{ selectedTicket.requestedBy }}</span>
+            </div>
+            <div class="col-6">
+              <small class="text-secondary d-block">Created Date</small>
+              <span>{{ selectedTicket.createdDate }}</span>
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-6">
+              <small class="text-secondary d-block">Priority</small>
+              <span class="badge {{ getPriorityBadgeClass(selectedTicket.priority) }}">{{ selectedTicket.priority }}</span>
+            </div>
+            <div class="col-6">
+              <small class="text-secondary d-block">Status</small>
+              <span class="badge {{ getStatusBadgeClass(selectedTicket.status) }}">{{ selectedTicket.status }}</span>
+            </div>
+          </div>
+          <div class="mb-2">
+            <small class="text-secondary d-block">Description</small>
+            <p class="p-2 bg-light rounded text-muted mb-0 small">{{ selectedTicket.description || 'No description provided.' }}</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
       </div>
-      <div class="modal-body">
-        <div class="mb-3">
-          <small class="text-secondary d-block">Subject</small>
-          <span class="fw-bold fs-6">{{ selectedTicket.title }}</span>
-        </div>
-        <div class="row mb-3">
-          <div class="col-6">
-            <small class="text-secondary d-block">Requested By</small>
-            <span class="fw-semibold">{{ selectedTicket.requestedBy }}</span>
-          </div>
-          <div class="col-6">
-            <small class="text-secondary d-block">Created Date</small>
-            <span>{{ selectedTicket.createdDate }}</span>
-          </div>
-        </div>
-        <div class="row mb-3">
-          <div class="col-6">
-            <small class="text-secondary d-block">Priority</small>
-            <span class="badge {{ getPriorityBadgeClass(selectedTicket.priority) }}">{{ selectedTicket.priority }}</span>
-          </div>
-          <div class="col-6">
-            <small class="text-secondary d-block">Status</small>
-            <span class="badge {{ getStatusBadgeClass(selectedTicket.status) }}">{{ selectedTicket.status }}</span>
-          </div>
-        </div>
-        <div class="mb-2">
-          <small class="text-secondary d-block">Description</small>
-          <p class="p-2 bg-light rounded text-muted mb-0 small">{{ selectedTicket.description || 'No description provided.' }}</p>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-      </div>
-    </div>
+    }
   </div>
 </div>
+
 
 <!-- Modal 3: Edit -->
 <div class="modal fade" id="editTicketModal" tabindex="-1" aria-hidden="true">

@@ -10,7 +10,16 @@
 
       <div class="dropdown">
         <button class="btn btn-link text-white text-decoration-none dropdown-toggle d-flex align-items-center gap-2 p-0 border-0 shadow-none" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-          <i class="bi bi-person-circle fs-5"></i>
+          @if (authService.avatarUrl()) {
+            <img
+              [src]="'http://localhost:8080' + authService.avatarUrl()"
+              alt="avatar"
+              class="rounded-circle"
+              style="width: 30px; height: 30px; object-fit: cover;"
+            />
+          } @else {
+            <i class="bi bi-person-circle fs-5"></i>
+          }
           <span class="fw-semibold small">{{ authService.username() || 'User' }}</span>
         </button>
         <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
@@ -46,16 +55,20 @@
         <div class="modal-body p-4">
 
           <!-- Success Alert -->
-          <div *ngIf="successMessage" class="alert alert-success d-flex align-items-center gap-2 py-2 small mb-3">
-            <i class="bi bi-check-circle-fill"></i>
-            <div>{{ successMessage }}</div>
-          </div>
+          @if (successMessage) {
+            <div class="alert alert-success d-flex align-items-center gap-2 py-2 small mb-3">
+              <i class="bi bi-check-circle-fill"></i>
+              <div>{{ successMessage }}</div>
+            </div>
+          }
 
           <!-- Error Alert -->
-          <div *ngIf="errorMessage" class="alert alert-danger d-flex align-items-center gap-2 py-2 small mb-3">
-            <i class="bi bi-exclamation-triangle-fill"></i>
-            <div>{{ errorMessage }}</div>
-          </div>
+          @if (errorMessage) {
+            <div class="alert alert-danger d-flex align-items-center gap-2 py-2 small mb-3">
+              <i class="bi bi-exclamation-triangle-fill"></i>
+              <div>{{ errorMessage }}</div>
+            </div>
+          }
 
           <!-- Current Password -->
           <div class="mb-3">
@@ -70,9 +83,11 @@
                 <i class="bi" [ngClass]="showCurrentPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
               </button>
             </div>
-            <div *ngIf="passwordForm.get('currentPassword')?.touched && passwordForm.get('currentPassword')?.hasError('required')" class="text-danger small mt-1">
-              Current password is required.
-            </div>
+            @if (passwordForm.get('currentPassword')?.touched && passwordForm.get('currentPassword')?.hasError('required')) {
+              <div class="text-danger small mt-1">
+                Current password is required.
+              </div>
+            }
           </div>
 
           <!-- New Password -->
@@ -88,12 +103,16 @@
                 <i class="bi" [ngClass]="showNewPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
               </button>
             </div>
-            <div *ngIf="passwordForm.get('newPassword')?.touched && passwordForm.get('newPassword')?.hasError('required')" class="text-danger small mt-1">
-              New password is required.
-            </div>
-            <div *ngIf="passwordForm.get('newPassword')?.touched && passwordForm.get('newPassword')?.hasError('minlength')" class="text-danger small mt-1">
-              New password must be at least 6 characters.
-            </div>
+            @if (passwordForm.get('newPassword')?.touched && passwordForm.get('newPassword')?.hasError('required')) {
+              <div class="text-danger small mt-1">
+                New password is required.
+              </div>
+            }
+            @if (passwordForm.get('newPassword')?.touched && passwordForm.get('newPassword')?.hasError('minlength')) {
+              <div class="text-danger small mt-1">
+                New password must be at least 6 characters.
+              </div>
+            }
           </div>
 
           <!-- Confirm New Password -->
@@ -109,12 +128,16 @@
                 <i class="bi" [ngClass]="showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
               </button>
             </div>
-            <div *ngIf="passwordForm.get('confirmPassword')?.touched && passwordForm.get('confirmPassword')?.hasError('required')" class="text-danger small mt-1">
-              Password confirmation is required.
-            </div>
-            <div *ngIf="passwordForm.hasError('passwordMismatch') && passwordForm.get('confirmPassword')?.touched" class="text-danger small mt-1">
-              Passwords do not match.
-            </div>
+            @if (passwordForm.get('confirmPassword')?.touched && passwordForm.get('confirmPassword')?.hasError('required')) {
+              <div class="text-danger small mt-1">
+                Password confirmation is required.
+              </div>
+            }
+            @if (passwordForm.hasError('passwordMismatch') && passwordForm.get('confirmPassword')?.touched) {
+              <div class="text-danger small mt-1">
+                Passwords do not match.
+              </div>
+            }
           </div>
 
         </div>
@@ -122,7 +145,9 @@
         <div class="modal-footer bg-light py-2">
           <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal" [disabled]="isSubmitting">Cancel</button>
           <button type="submit" class="btn btn-primary btn-sm px-3 d-flex align-items-center gap-2" [disabled]="passwordForm.invalid || isSubmitting">
-            <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            @if (isSubmitting) {
+              <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            }
             <span>{{ isSubmitting ? 'Saving...' : 'Update Password' }}</span>
           </button>
         </div>
@@ -130,5 +155,3 @@
     </div>
   </div>
 </div>
-
-

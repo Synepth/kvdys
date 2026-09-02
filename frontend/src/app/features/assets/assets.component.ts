@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
@@ -45,7 +45,8 @@ export class AssetsComponent implements OnInit {
   constructor(
     private assetService: AssetService,
     private userService: UserService,
-    private departmentService: DepartmentService
+    private departmentService: DepartmentService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -60,6 +61,7 @@ export class AssetsComponent implements OnInit {
         this.totalPages = data.totalPages;
         this.totalElements = data.totalElements;
         this.currentPage = data.number;
+        this.cdr.detectChanges();
       },
       error: () => this.showError('Failed to load assets.')
     });
@@ -93,6 +95,7 @@ export class AssetsComponent implements OnInit {
       next: ({ users, departments }) => {
         this.users = users.content;
         this.departments = departments;
+        this.cdr.detectChanges();
       },
       error: () => this.showError('Failed to load users/departments for dropdowns.')
     });

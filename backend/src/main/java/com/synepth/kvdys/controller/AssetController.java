@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/assets")
@@ -47,5 +48,10 @@ public class AssetController {
     public ResponseEntity<Void> deleteAsset(@PathVariable Long id) {
         assetService.deleteAsset(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/recent")
+    public ResponseEntity<List<AssetResponse>> getRecentAssets() {
+        return ResponseEntity.ok(assetService.getRecentAssets(5));
     }
 }
