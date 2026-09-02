@@ -43,3 +43,6 @@ build/
 
 # Log Files
 *.log
+
+# Uploaded Files
+**/uploads/
