@@ -20,7 +20,8 @@ export class AuthService {
   readonly isLoggedIn = computed(() => !!this.currentUser());
   readonly username = computed(() => this.currentUser()?.username ?? '');
   readonly email = computed(() => this.currentUser()?.email ?? '');
-  readonly roles = computed(() => this.currentUser()?.roles ?? []);
+  readonly avatarUrl = computed(() => this.currentUser()?.avatarUrl ?? null);
+  readonly roles = computed(() => this.getRolesFromToken(this.getToken()));
   readonly isAdmin = computed(() => this.hasRole('ROLE_ADMIN'));
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
@@ -66,6 +67,16 @@ export class AuthService {
       const updated = { ...user, avatarUrl };
       localStorage.setItem(USER_KEY, JSON.stringify(updated));
       this.currentUser.set(updated);
+    }
+  }
+
+  private getRolesFromToken(token: string | null): string[] {
+    if (!token) return [];
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.roles ?? [];
+    } catch {
+      return [];
     }
   }
 

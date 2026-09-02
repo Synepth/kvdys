@@ -7,7 +7,6 @@ export interface LoginResponse {
   token: string;
   username: string;
   email: string;
-  roles: string[];
   userId: number;
   avatarUrl?: string | null;
 }

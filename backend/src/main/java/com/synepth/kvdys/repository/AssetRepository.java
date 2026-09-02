@@ -13,6 +13,14 @@ public interface AssetRepository extends JpaRepository<Asset, Long> {
 
     boolean existsBySerialNumber(String serialNumber);
 
+    // Dashboard stats
+    long countByStatus(String status);
+    long countByAssignedUserIsNotNull();
+    long countByAssignedUserIsNull();
+
+    // Recent assets
+    java.util.List<Asset> findTop5ByOrderByIdDesc();
+
     @Query("""
         SELECT a FROM Asset a
         LEFT JOIN a.assignedUser u
