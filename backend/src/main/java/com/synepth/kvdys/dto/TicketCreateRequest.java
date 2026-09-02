@@ -6,7 +6,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class CreateTicketRequest {
+public class TicketCreateRequest {
 
     @NotBlank(message = "Title is required")
     private String title;

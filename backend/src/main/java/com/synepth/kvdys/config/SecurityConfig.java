@@ -47,6 +47,9 @@ public class SecurityConfig {
                         .requestMatchers("/uploads/**").permitAll()
                         // Profile avatar - allow any authenticated user
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/users/me/avatar").authenticated()
+                        // Ticket comment & attachment - author/uploader or admin handled in service
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/tickets/*/comments/*").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/tickets/*/attachments/*").authenticated()
                         // Admin only
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/users").hasRole("ADMIN")

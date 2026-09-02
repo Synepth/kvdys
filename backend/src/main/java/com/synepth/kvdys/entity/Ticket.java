@@ -45,6 +45,6 @@ public class Ticket {
     private User updatedBy;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assigned_to")
-    private User assignedTo;
+    @JoinColumn(name = "assigned_user_id")
+    private User assignedUser;
 }
