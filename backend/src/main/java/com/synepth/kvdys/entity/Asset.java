@@ -27,6 +27,12 @@ public class Asset {
 
     private String status;
 
+    @Column(nullable = false)
+    private String brand;
+
+    @Column(nullable = false)
+    private String model;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "department_id")
     private Department department;

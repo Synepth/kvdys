@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { AssetCreateRequest, AssetResponse } from '../../models/asset';
+import { AssetCreateRequest, AssetPage, AssetResponse } from '../../models/asset';
 
 @Injectable({
   providedIn: 'root'
@@ -11,8 +11,22 @@ export class AssetService {
 
   constructor(private http: HttpClient) {}
 
-  getAllAssets(): Observable<AssetResponse[]> {
-    return this.http.get<AssetResponse[]>(this.apiUrl);
+  getAllAssets(
+    page = 0,
+    size = 10,
+    search = '',
+    status = '',
+    category = ''
+  ): Observable<AssetPage> {
+    let params = new HttpParams()
+      .set('page', page)
+      .set('size', size);
+
+    if (search)   params = params.set('search', search);
+    if (status)   params = params.set('status', status);
+    if (category) params = params.set('category', category);
+
+    return this.http.get<AssetPage>(this.apiUrl, { params });
   }
 
   createAsset(request: AssetCreateRequest): Observable<AssetResponse> {

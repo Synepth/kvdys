@@ -9,6 +9,8 @@ public class AssetResponse {
 
     private Long id;
     private String name;
+    private String brand;
+    private String model;
     private String serialNumber;
     private String type;
     private String status;

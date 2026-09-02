@@ -4,10 +4,12 @@ import com.synepth.kvdys.dto.AssetCreateRequest;
 import com.synepth.kvdys.dto.AssetResponse;
 import com.synepth.kvdys.service.AssetService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/assets")
@@ -20,8 +22,15 @@ public class AssetController {
     }
 
     @GetMapping
-    public ResponseEntity<List<AssetResponse>> getAllAssets() {
-        return ResponseEntity.ok(assetService.getAllAssets());
+    public ResponseEntity<Page<AssetResponse>> getAllAssets(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String category) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").ascending());
+        return ResponseEntity.ok(assetService.getAllAssets(search, status, category, pageable));
     }
 
     @PostMapping

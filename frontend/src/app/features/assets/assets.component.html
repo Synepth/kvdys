@@ -21,7 +21,7 @@
   <div class="card border-0 shadow-sm mb-4">
     <div class="card-body p-3">
       <div class="row g-3">
-        <div class="col-md-8">
+        <div class="col-md-6">
           <div class="input-group">
             <span class="input-group-text bg-white border-end-0">
               <i class="bi bi-search text-muted"></i>
@@ -29,19 +29,33 @@
             <input
               type="text"
               class="form-control border-start-0"
-              placeholder="Search by asset name, serial number, or assigned user..."
+              placeholder="Search by name, serial number, brand, model or user..."
               [(ngModel)]="searchTerm"
+              (ngModelChange)="onFilterChange()"
             >
           </div>
         </div>
-        <div class="col-md-4">
-          <select class="form-select" [(ngModel)]="selectedCategory">
-            <option value="All Categories">All Categories</option>
+        <div class="col-md-2">
+          <select class="form-select" [(ngModel)]="selectedCategory" (ngModelChange)="onFilterChange()">
+            <option value="">All Types</option>
             <option value="LAPTOP">Laptop</option>
             <option value="MONITOR">Monitor</option>
             <option value="KEYBOARD">Keyboard</option>
             <option value="OTHER">Other</option>
           </select>
+        </div>
+        <div class="col-md-2">
+          <select class="form-select" [(ngModel)]="selectedStatus" (ngModelChange)="onFilterChange()">
+            <option value="">All Statuses</option>
+            <option value="ACTIVE">Active</option>
+            <option value="IN_REPAIR">Under Maintenance</option>
+            <option value="RETIRED">Inactive</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-outline-secondary w-100" (click)="clearFilters()">
+            <i class="bi bi-x-circle me-1"></i> Clear
+          </button>
         </div>
       </div>
     </div>
@@ -56,6 +70,8 @@
           <tr>
             <th>Serial Number</th>
             <th>Asset Name</th>
+            <th>Brand</th>
+            <th>Model</th>
             <th>Type</th>
             <th>Assigned User</th>
             <th>Department</th>
@@ -64,10 +80,12 @@
           </tr>
           </thead>
           <tbody>
-            @for (asset of filteredAssets; track asset.id) {
+            @for (asset of assets; track asset.id) {
               <tr>
                 <td class="fw-semibold">{{ asset.serialNumber }}</td>
                 <td>{{ asset.name }}</td>
+                <td>{{ asset.brand || '-' }}</td>
+                <td>{{ asset.model || '-' }}</td>
                 <td><span class="badge bg-light text-dark border">{{ getTypeLabel(asset.type) }}</span></td>
                 <td>
                   @if (asset.assignedUsername) {
@@ -98,7 +116,7 @@
               </tr>
             } @empty {
               <tr>
-                <td colspan="7" class="text-center py-4 text-muted">
+                <td colspan="9" class="text-center py-4 text-muted">
                   No matching assets found.
                 </td>
               </tr>
@@ -106,6 +124,32 @@
           </tbody>
         </table>
       </div>
+    </div>
+
+    <!-- Pagination Footer -->
+    <div class="card-footer d-flex justify-content-between align-items-center">
+      <small class="text-muted">
+        Showing {{ assets.length }} of {{ totalElements }} assets
+      </small>
+      <nav>
+        <ul class="pagination pagination-sm mb-0">
+          <li class="page-item" [class.disabled]="currentPage === 0">
+            <button class="page-link" (click)="goToPage(currentPage - 1)">
+              <i class="bi bi-chevron-left"></i>
+            </button>
+          </li>
+          @for (p of pages; track p) {
+            <li class="page-item" [class.active]="p === currentPage">
+              <button class="page-link" (click)="goToPage(p)">{{ p + 1 }}</button>
+            </li>
+          }
+          <li class="page-item" [class.disabled]="currentPage === totalPages - 1">
+            <button class="page-link" (click)="goToPage(currentPage + 1)">
+              <i class="bi bi-chevron-right"></i>
+            </button>
+          </li>
+        </ul>
+      </nav>
     </div>
   </div>
 
@@ -124,24 +168,34 @@
               <input type="text" class="form-control" [(ngModel)]="newAsset.name" name="name" required placeholder="e.g. MacBook Pro 16">
             </div>
             <div class="mb-3">
+              <label class="form-label">Brand</label>
+              <input type="text" class="form-control" [(ngModel)]="newAsset.brand" name="brand" required placeholder="e.g. Apple">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Model</label>
+              <input type="text" class="form-control" [(ngModel)]="newAsset.model" name="model" required placeholder="e.g. MacBook Pro M3">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Status</label>
+              <select class="form-select" [(ngModel)]="newAsset.status" name="status">
+                <option value="" disabled>— Please Select —</option>
+                <option value="ACTIVE">Active</option>
+                <option value="IN_REPAIR">Under Maintenance</option>
+                <option value="RETIRED">Inactive</option>
+              </select>
+            </div>
+            <div class="mb-3">
               <label class="form-label">Serial Number</label>
               <input type="text" class="form-control" [(ngModel)]="newAsset.serialNumber" name="serialNumber" required placeholder="e.g. SN-88320">
             </div>
             <div class="mb-3">
               <label class="form-label">Asset Type</label>
               <select class="form-select" [(ngModel)]="newAsset.type" name="type">
+                <option value="" disabled>— Please Select —</option>
                 <option value="LAPTOP">Laptop</option>
                 <option value="MONITOR">Monitor</option>
                 <option value="KEYBOARD">Keyboard</option>
                 <option value="OTHER">Other</option>
-              </select>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Status</label>
-              <select class="form-select" [(ngModel)]="newAsset.status" name="status">
-                <option value="ACTIVE">Active</option>
-                <option value="IN_REPAIR">Under Maintenance</option>
-                <option value="RETIRED">Inactive</option>
               </select>
             </div>
             <div class="mb-3">
@@ -187,24 +241,34 @@
               <input type="text" class="form-control" [(ngModel)]="editAssetModel.name" name="editName" required>
             </div>
             <div class="mb-3">
+              <label class="form-label">Brand</label>
+              <input type="text" class="form-control" [(ngModel)]="editAssetModel.brand" name="editBrand" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Model</label>
+              <input type="text" class="form-control" [(ngModel)]="editAssetModel.model" name="editModel" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Status</label>
+              <select class="form-select" [(ngModel)]="editAssetModel.status" name="editStatus">
+                <option value="" disabled>— Please Select —</option>
+                <option value="ACTIVE">Active</option>
+                <option value="IN_REPAIR">Under Maintenance</option>
+                <option value="RETIRED">Inactive</option>
+              </select>
+            </div>
+            <div class="mb-3">
               <label class="form-label">Serial Number</label>
               <input type="text" class="form-control" [(ngModel)]="editAssetModel.serialNumber" name="editSerialNumber" required>
             </div>
             <div class="mb-3">
               <label class="form-label">Asset Type</label>
               <select class="form-select" [(ngModel)]="editAssetModel.type" name="editType">
+                <option value="" disabled>— Please Select —</option>
                 <option value="LAPTOP">Laptop</option>
                 <option value="MONITOR">Monitor</option>
                 <option value="KEYBOARD">Keyboard</option>
                 <option value="OTHER">Other</option>
-              </select>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Status</label>
-              <select class="form-select" [(ngModel)]="editAssetModel.status" name="editStatus">
-                <option value="ACTIVE">Active</option>
-                <option value="IN_REPAIR">Under Maintenance</option>
-                <option value="RETIRED">Inactive</option>
               </select>
             </div>
             <div class="mb-3">
@@ -247,6 +311,8 @@
           <div class="modal-body">
             <div class="mb-2"><strong>ID:</strong> {{ selectedAsset.id }}</div>
             <div class="mb-2"><strong>Asset Name:</strong> {{ selectedAsset.name }}</div>
+            <div class="mb-2"><strong>Brand:</strong> {{ selectedAsset.brand || 'N/A' }}</div>
+            <div class="mb-2"><strong>Model:</strong> {{ selectedAsset.model || 'N/A' }}</div>
             <div class="mb-2"><strong>Serial Number:</strong> {{ selectedAsset.serialNumber }}</div>
             <div class="mb-2"><strong>Type:</strong> {{ getTypeLabel(selectedAsset.type) }}</div>
             <div class="mb-2"><strong>Department:</strong> {{ selectedAsset.departmentName || 'N/A' }}</div>
@@ -265,4 +331,5 @@
       </div>
     </div>
   </div>
+
 </div>

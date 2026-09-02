@@ -20,6 +20,12 @@ public class AssetCreateRequest {
     @NotBlank(message = "Status is required")
     private String status;
 
+    @NotBlank(message = "Brand is required")
+    private String brand;
+
+    @NotBlank(message = "Model is required")
+    private String model;
+
     private Long departmentId;
     private Long assignedUserId;
 }
