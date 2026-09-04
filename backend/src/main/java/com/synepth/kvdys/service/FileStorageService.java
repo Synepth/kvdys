@@ -1,10 +1,13 @@
 package com.synepth.kvdys.service;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.nio.file.*;
 import java.util.Set;
 import java.util.UUID;
@@ -105,6 +108,21 @@ public class FileStorageService {
             Path filePath = Paths.get(ticketUploadPath).resolve(filename);
             Files.deleteIfExists(filePath);
         } catch (IOException e) {
+        }
+    }
+
+    public Resource loadTicketAttachmentAsResource(String attachmentUrl) {
+        try {
+            String filename = attachmentUrl.substring(attachmentUrl.lastIndexOf("/") + 1);
+            Path filePath = Paths.get(ticketUploadPath).resolve(filename).normalize();
+            Resource resource = new UrlResource(filePath.toUri());
+            if (resource.exists() && resource.isReadable()) {
+                return resource;
+            } else {
+                throw new RuntimeException("File not found or not readable: " + filename);
+            }
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("File path is invalid: " + e.getMessage());
         }
     }
 }

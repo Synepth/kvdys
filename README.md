@@ -232,6 +232,7 @@ kvdys/
 | `DELETE` | `/api/v1/tickets/{ticketId}/comments/{commentId}` | Author / Admin | Delete a comment |
 | `GET` | `/api/v1/tickets/{id}/attachments` | Authenticated | List all file attachments for a ticket |
 | `POST` | `/api/v1/tickets/{id}/attachments` | Authenticated | Upload file attachment (multipart, up to 10MB) |
+| `GET` | `/api/v1/tickets/{ticketId}/attachments/{attachmentId}/download` | Authenticated | Download attachment with original filename |
 | `DELETE` | `/api/v1/tickets/{ticketId}/attachments/{attachmentId}` | Uploader / Admin | Delete file attachment and file on disk |
 
 *Swagger UI interactive documentation available at:* `http://localhost:8080/swagger-ui.html`

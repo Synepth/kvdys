@@ -1,8 +1,19 @@
-<div class="container-fluid p-4">
+@if (isInitialLoading) {
+  <div class="container-fluid">
+    <div class="row g-3 my-3">
+      <div class="col-12 text-center text-muted py-5">
+        <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+        Loading departments...
+      </div>
+    </div>
+  </div>
+} @else {
+  <div class="container-fluid">
 
   <!-- Header Section -->
-  <div class="mb-3">
-    <h2 class="fw-bold m-0">Department Management</h2>
+  <div class="mb-4">
+    <h4 class="fw-bold m-0 text-dark">Department Management</h4>
+    <small class="text-secondary">Manage company organizational departments and units</small>
   </div>
 
   <!-- Unified Toolbar: Filters (Left) & Action Buttons (Right) -->
@@ -55,35 +66,45 @@
           </tr>
           </thead>
           <tbody>
-            @for (dept of departments; track dept.id) {
+            @if (isLoading) {
               <tr>
-                <td>{{ dept.id }}</td>
-                <td>{{ dept.name }}</td>
-                <td class="text-muted">{{ dept.description || '-' }}</td>
-                <td class="text-center">
-                  <span class="badge bg-secondary">{{ dept.userCount }}</span>
-                </td>
-                <td class="text-center">
-                  <button
-                    class="btn btn-sm btn-outline-warning me-2"
-                    data-bs-toggle="modal"
-                    data-bs-target="#departmentModal"
-                    (click)="openEditModal(dept)">
-                    Edit
-                  </button>
-                  <button
-                    class="btn btn-sm btn-outline-danger"
-                    (click)="deleteDepartment(dept)">
-                    Delete
-                  </button>
+                <td colspan="5" class="text-center py-5 text-muted">
+                  <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                  Loading departments...
                 </td>
               </tr>
-            } @empty {
-              <tr>
-                <td colspan="5" class="text-center py-4 text-muted">
-                  No departments found.
-                </td>
-              </tr>
+            } @else {
+              @for (dept of departments; track dept.id) {
+                <tr>
+                  <td>{{ dept.id }}</td>
+                  <td>{{ dept.name }}</td>
+                  <td class="text-muted">{{ dept.description || '-' }}</td>
+                  <td class="text-center">
+                    <span class="badge bg-secondary">{{ dept.userCount }}</span>
+                  </td>
+                  <td class="text-center">
+                    <button
+                      class="btn btn-sm btn-outline-warning me-2"
+                      data-bs-toggle="modal"
+                      data-bs-target="#departmentModal"
+                      (click)="openEditModal(dept)">
+                      Edit
+                    </button>
+                    <button
+                      class="btn btn-sm btn-outline-danger"
+                      (click)="deleteDepartment(dept)">
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="5" class="text-center py-4 text-muted">
+                    <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+                    No departments found.
+                  </td>
+                </tr>
+              }
             }
           </tbody>
         </table>
@@ -116,6 +137,7 @@
   }
 
 </div>
+}
 
 <!-- Department Add / Edit Modal -->
 <div class="modal fade" id="departmentModal" tabindex="-1" aria-labelledby="departmentModalLabel" aria-hidden="true">

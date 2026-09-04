@@ -10,6 +10,7 @@ import com.synepth.kvdys.repository.CommentRepository;
 import com.synepth.kvdys.repository.TicketRepository;
 import com.synepth.kvdys.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -298,5 +299,20 @@ public class TicketService {
         }
 
         return res;
+    }
+
+    @Transactional(readOnly = true)
+    public Attachment getAttachmentEntity(Long ticketId, Long attachmentId) {
+        Attachment attachment = attachmentRepository.findById(attachmentId)
+                .orElseThrow(() -> new RuntimeException("Attachment not found with ID: " + attachmentId));
+
+        if (!attachment.getTicket().getId().equals(ticketId)) {
+            throw new RuntimeException("Attachment does not belong to this support request.");
+        }
+        return attachment;
+    }
+
+    public Resource loadAttachmentFile(String filePath) {
+        return fileStorageService.loadTicketAttachmentAsResource(filePath);
     }
 }

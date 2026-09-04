@@ -5,4 +5,9 @@ export interface DashboardStats {
   retiredAssets: number;
   assignedAssets: number;
   unassignedAssets: number;
+
+  totalTickets?: number;
+  openTickets?: number;
+  inReviewTickets?: number;
+  resolvedTickets?: number;
 }

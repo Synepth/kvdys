@@ -1,8 +1,19 @@
-<div class="container-fluid p-4">
+@if (isInitialLoading) {
+  <div class="container-fluid">
+    <div class="row g-3 my-3">
+      <div class="col-12 text-center text-muted py-5">
+        <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+        Loading roles...
+      </div>
+    </div>
+  </div>
+} @else {
+  <div class="container-fluid">
 
   <!-- Header -->
-  <div class="mb-3">
-    <h2 class="fw-bold m-0">Role Management</h2>
+  <div class="mb-4">
+    <h4 class="fw-bold m-0 text-dark">Role Management</h4>
+    <small class="text-secondary">Configure system access roles and permission profiles</small>
   </div>
 
   <!-- Toolbar -->
@@ -73,6 +84,7 @@
   </div>
 
 </div>
+}
 
 <!-- Role Add / Edit Modal -->
 <div class="modal fade" id="roleModal" tabindex="-1" aria-labelledby="roleModalLabel" aria-hidden="true">

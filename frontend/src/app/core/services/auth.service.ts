@@ -23,6 +23,7 @@ export class AuthService {
   readonly avatarUrl = computed(() => this.currentUser()?.avatarUrl ?? null);
   readonly roles = computed(() => this.getRolesFromToken(this.getToken()));
   readonly isAdmin = computed(() => this.hasRole('ROLE_ADMIN'));
+  readonly userId = computed(() => this.currentUser()?.userId ?? null);
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.API_URL}/login`, credentials).pipe(

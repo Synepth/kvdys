@@ -11,6 +11,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
+    long countByStatus(String status);
+
     @Query("""
         SELECT t FROM Ticket t
         LEFT JOIN t.createdBy c

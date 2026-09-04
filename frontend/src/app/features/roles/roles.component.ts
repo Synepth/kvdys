@@ -17,6 +17,7 @@ export class RolesComponent implements OnInit {
   isEditMode = false;
   selectedRoleId: number | null = null;
   errorMessage: string | null = null;
+  isInitialLoading = true;
 
   constructor(private roleService: RoleService, private fb: FormBuilder, private toastService: ToastService, private cdr: ChangeDetectorRef) {}
 
@@ -34,10 +35,13 @@ export class RolesComponent implements OnInit {
     this.roleService.getAllRoles().subscribe({
       next: (data) => {
         this.roles = data;
+        this.isInitialLoading = false;
         this.cdr.detectChanges();
       },
       error: (err) => {
+        this.isInitialLoading = false;
         this.toastService.error('Failed to load roles');
+        this.cdr.detectChanges();
       }
     });
   }

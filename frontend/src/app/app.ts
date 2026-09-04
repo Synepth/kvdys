@@ -5,6 +5,7 @@ import { SidebarComponent } from './shared/components/sidebar/sidebar';
 import { FooterComponent } from './shared/components/footer/footer';
 import { ToastContainerComponent } from './shared/components/toast-container/toast-container';
 import { AuthService } from './core/services/auth.service';
+import { SidebarService } from './core/services/sidebar.service';
 
 @Component({
   selector: 'app-root',
@@ -22,5 +23,6 @@ import { AuthService } from './core/services/auth.service';
 export class AppComponent {
   title = 'frontend';
   readonly authService = inject(AuthService);
+  readonly sidebarService = inject(SidebarService);
 }
 

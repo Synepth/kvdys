@@ -4,6 +4,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractContro
 import { UserService } from '../../../core/services/user.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { APP_VERSION } from '../footer/footer';
 
 import { RouterModule } from '@angular/router';
 
@@ -18,6 +19,7 @@ export class NavbarComponent implements OnInit {
   private userService = inject(UserService);
   private toastService = inject(ToastService);
   readonly authService = inject(AuthService);
+  readonly appVersion = APP_VERSION;
 
   passwordForm!: FormGroup;
   isSubmitting = false;

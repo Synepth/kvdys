@@ -1,18 +1,24 @@
 package com.synepth.kvdys.controller;
 
 import com.synepth.kvdys.dto.*;
+import com.synepth.kvdys.entity.Attachment;
 import com.synepth.kvdys.service.TicketService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.util.UriUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.List;
 
@@ -63,7 +69,7 @@ public class TicketController {
         return ResponseEntity.noContent().build();
     }
 
-    // ==================== COMMENTS ====================
+    //COMMENTS
 
     @GetMapping("/{id}/comments")
     public ResponseEntity<List<CommentResponse>> getComments(@PathVariable Long id) {
@@ -88,7 +94,7 @@ public class TicketController {
         return ResponseEntity.noContent().build();
     }
 
-    // ==================== ATTACHMENTS ====================
+    //ATTACHMENTS
 
     @GetMapping("/{id}/attachments")
     public ResponseEntity<List<AttachmentResponse>> getAttachments(@PathVariable Long id) {
@@ -111,5 +117,21 @@ public class TicketController {
             Principal principal) {
         ticketService.deleteAttachment(ticketId, attachmentId, principal.getName());
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{ticketId}/attachments/{attachmentId}/download")
+    public ResponseEntity<Resource> downloadAttachment(
+            @PathVariable Long ticketId,
+            @PathVariable Long attachmentId) {
+
+        Attachment attachment = ticketService.getAttachmentEntity(ticketId, attachmentId);
+        Resource resource = ticketService.loadAttachmentFile(attachment.getFilePath());
+
+        String encodedFileName = UriUtils.encode(attachment.getFileName(), StandardCharsets.UTF_8);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(attachment.getContentType() != null ? attachment.getContentType() : "application/octet-stream"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + attachment.getFileName() + "\"; filename*=UTF-8''" + encodedFileName)
+                .body(resource);
     }
 }
