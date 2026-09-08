@@ -143,7 +143,7 @@ kvdys/
 - Assigned user count per role
 - Protection preventing deletion of core system roles (`ROLE_ADMIN`, `ROLE_USER`) and roles in active use
 
-### ⏳ Support Tickets (Backend Completed / Frontend Integration In Progress)
+### ✅ Support Tickets
 - Interactive ticket tracking interface with filter by status (`Open`, `In Review`, `Resolved`, `Cancelled`)
 - Search by title, requestor, and ticket ID with priority badges (`Low`, `Medium`, `High`)
 - Full backend REST API with CRUD, multi-criteria search, category/priority/status filters, and pagination

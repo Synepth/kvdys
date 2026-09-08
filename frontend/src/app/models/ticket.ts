@@ -1,4 +1,4 @@
-﻿export interface TicketResponse {
+export interface TicketResponse {
   id: number;
   title: string;
   description: string;
@@ -11,6 +11,9 @@
   assignedUserId?: number | null;
   assignedUsername?: string | null;
   assignedName?: string | null;
+  assetId?: number | null;
+  assetName?: string | null;
+  assetSerialNumber?: string | null;
   createdAt: string;
   updatedAt?: string | null;
   commentCount: number;
@@ -23,6 +26,7 @@ export interface TicketCreateRequest {
   category: string;
   priority: string;
   assignedUserId?: number | null;
+  assetId?: number | null;
 }
 
 export interface TicketUpdateRequest {
@@ -32,6 +36,7 @@ export interface TicketUpdateRequest {
   priority: string;
   status: string;
   assignedUserId?: number | null;
+  assetId?: number | null;
 }
 
 export interface TicketPage {
@@ -66,3 +71,18 @@ export interface AttachmentResponse {
   uploadedByUsername: string;
   createdAt: string;
 }
+
+export interface TicketActivityResponse {
+  id: number;
+  ticketId: number;
+  actorId?: number | null;
+  actorUsername?: string | null;
+  actorName?: string | null;
+  actorAvatarUrl?: string | null;
+  actionType: string;
+  description?: string;
+  oldValue?: string | null;
+  newValue?: string | null;
+  createdAt: string;
+}
+

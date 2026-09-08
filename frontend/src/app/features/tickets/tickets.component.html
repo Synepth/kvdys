@@ -15,12 +15,21 @@
         <h4 class="fw-bold m-0">Support Requests</h4>
         <small class="text-secondary">Manage incidents, requests, and support tickets in the system</small>
       </div>
-      <button class="btn btn-primary d-flex align-items-center gap-2"
-              data-bs-toggle="modal"
-              data-bs-target="#newTicketModal"
-              (click)="openCreateModal()">
-        <i class="bi bi-plus-lg"></i> Create New Support Request
-      </button>
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-outline-success d-flex align-items-center gap-2"
+                [disabled]="isExporting"
+                (click)="exportToCsv()"
+                title="Export filtered support requests to CSV">
+          <i class="bi bi-file-earmark-spreadsheet"></i>
+          {{ isExporting ? 'Exporting...' : 'Export CSV' }}
+        </button>
+        <button class="btn btn-primary d-flex align-items-center gap-2"
+                data-bs-toggle="modal"
+                data-bs-target="#newTicketModal"
+                (click)="openCreateModal()">
+          <i class="bi bi-plus-lg"></i> Create New Support Request
+        </button>
+      </div>
     </div>
 
   <!-- Filter Panel -->
@@ -92,6 +101,24 @@
     </div>
   </div>
 
+  <ul class="nav nav-pills mb-3 border rounded p-1 bg-light-subtle w-fit-content" style="gap: 0.25rem;">
+    <li class="nav-item">
+      <button type="button" class="nav-link" [class.active]="activeTab === 'all'" (click)="setTab('all')">
+        All Requests
+      </button>
+    </li>
+    <li class="nav-item">
+      <button type="button" class="nav-link" [class.active]="activeTab === 'my'" (click)="setTab('my')">
+        Assigned to Me
+      </button>
+    </li>
+    <li class="nav-item">
+      <button type="button" class="nav-link" [class.active]="activeTab === 'unassigned'" (click)="setTab('unassigned')">
+        Unassigned
+      </button>
+    </li>
+  </ul>
+
   <!-- Tickets Table -->
   <div class="card border-0 shadow-sm">
     <div class="table-responsive">
@@ -125,6 +152,11 @@
                   <div class="text-truncate" style="max-width: 260px;" [title]="ticket.title">
                     {{ ticket.title }}
                   </div>
+                  @if (ticket.assetName) {
+                    <small class="text-muted d-flex align-items-center gap-1 mt-1" style="font-size: 0.75rem;" [title]="'Linked Asset: ' + ticket.assetName">
+                      <i class="bi bi-box-seam text-primary"></i> {{ ticket.assetName }}
+                    </small>
+                  }
                 </td>
                 <td>
                   <div class="d-flex align-items-center gap-2">
@@ -336,6 +368,16 @@
           </div>
 
           <div class="mb-3">
+            <label class="form-label fw-semibold">Related Asset <span class="text-muted fw-normal">(optional)</span></label>
+            <select class="form-select" [(ngModel)]="newTicket.assetId" name="assetId">
+              <option [ngValue]="null">— None / Not Applicable —</option>
+              @for (asset of assets; track asset.id) {
+                <option [ngValue]="asset.id">{{ asset.name }} ({{ asset.brand }} {{ asset.model }} • S/N: {{ asset.serialNumber }})</option>
+              }
+            </select>
+          </div>
+
+          <div class="mb-3">
             <label class="form-label fw-semibold">Description <span class="text-danger">*</span></label>
             <textarea class="form-control"
                       rows="4"
@@ -412,6 +454,14 @@
                 <span class="badge bg-secondary rounded-pill ms-1">{{ attachments.length }}</span>
               </button>
             </li>
+            <li class="nav-item">
+              <button class="nav-link"
+                      [class.active]="activeDetailTab === 'activities'"
+                      (click)="setActiveTab('activities')">
+                <i class="bi bi-clock-history me-1"></i> Activity History
+                <span class="badge bg-secondary rounded-pill ms-1">{{ activities.length }}</span>
+              </button>
+            </li>
           </ul>
 
           <!-- TAB 1: DETAILS -->
@@ -461,6 +511,18 @@
                     {{ selectedTicket.updatedAt ? (selectedTicket.updatedAt | date:'medium') : '—' }}
                   </span>
                 </div>
+                @if (selectedTicket.assetId) {
+                  <div class="col-12 border-top pt-2">
+                    <small class="text-secondary d-block">Related Corporate Asset</small>
+                    <div class="d-flex align-items-center gap-2 mt-1">
+                      <i class="bi bi-box-seam text-primary fs-5"></i>
+                      <span class="fw-semibold text-dark">{{ selectedTicket.assetName }}</span>
+                      @if (selectedTicket.assetSerialNumber) {
+                        <span class="badge bg-light text-secondary border font-monospace">S/N: {{ selectedTicket.assetSerialNumber }}</span>
+                      }
+                    </div>
+                  </div>
+                }
               </div>
             </div>
 
@@ -618,6 +680,91 @@
               </div>
             </div>
           }
+
+          <!-- TAB 4: ACTIVITY HISTORY (AUDIT TRAIL & TIMELINE) -->
+          @if (activeDetailTab === 'activities') {
+            <div class="d-flex flex-column" style="min-height: 250px;">
+              <div class="flex-grow-1 overflow-auto pe-1" style="max-height: 380px;">
+                @if (isActivitiesLoading) {
+                  <div class="text-center py-4 text-muted">
+                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                    Loading activity timeline...
+                  </div>
+                } @else {
+                  @if (activities.length > 0) {
+                    <div class="position-relative ps-4 ms-2 border-start border-2 border-secondary-subtle">
+                      @for (act of activities; track act.id) {
+                        <div class="position-relative mb-3 pb-1">
+                          <!-- Timeline Icon Marker -->
+                          <div class="position-absolute d-flex align-items-center justify-content-center bg-white rounded-circle shadow-sm border border-secondary-subtle"
+                               style="left: -33px; top: 2px; width: 26px; height: 26px;">
+                            <i [class]="'bi ' + getActivityIcon(act.actionType)" style="font-size: 13px;"></i>
+                          </div>
+
+                          <!-- Activity Card -->
+                          <div class="card border-0 bg-light p-3 ms-1 rounded-3 shadow-none">
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                              <div class="d-flex align-items-center gap-2 flex-wrap">
+                                @if (act.actorAvatarUrl) {
+                                  <img [src]="'http://localhost:8080' + act.actorAvatarUrl"
+                                       alt="Avatar"
+                                       class="rounded-circle"
+                                       style="width: 24px; height: 24px; object-fit: cover;">
+                                } @else if (act.actorUsername) {
+                                  <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold"
+                                       style="width: 24px; height: 24px; font-size: 11px;">
+                                    {{ (act.actorName || act.actorUsername).charAt(0).toUpperCase() }}
+                                  </div>
+                                } @else {
+                                  <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center"
+                                       style="width: 24px; height: 24px; font-size: 11px;">
+                                    <i class="bi bi-gear-fill"></i>
+                                  </div>
+                                }
+                                <span class="fw-semibold small text-dark">{{ act.actorName || act.actorUsername || 'System' }}</span>
+                                @if (act.actorUsername) {
+                                  <small class="text-muted">({{ act.actorUsername }})</small>
+                                }
+                                <span class="badge" [ngClass]="getActivityBadgeClass(act.actionType)">
+                                  {{ act.actionType }}
+                                </span>
+                              </div>
+                              <small class="text-muted" [title]="act.createdAt | date:'medium'">
+                                <i class="bi bi-clock me-1"></i>{{ act.createdAt | date:'MMM d, y, HH:mm' }}
+                              </small>
+                            </div>
+
+                            <p class="mb-0 text-dark small mt-1">{{ act.description }}</p>
+
+                            @if (act.oldValue || act.newValue) {
+                              <div class="d-flex align-items-center gap-2 mt-2 pt-2 border-top border-secondary-subtle small">
+                                @if (act.oldValue) {
+                                  <span class="text-muted">Previous:</span>
+                                  <span class="badge bg-secondary-subtle text-secondary border font-monospace">{{ act.oldValue }}</span>
+                                }
+                                @if (act.oldValue && act.newValue) {
+                                  <i class="bi bi-arrow-right text-muted small"></i>
+                                }
+                                @if (act.newValue) {
+                                  <span class="text-muted">New:</span>
+                                  <span class="badge bg-primary-subtle text-primary border font-monospace">{{ act.newValue }}</span>
+                                }
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  } @else {
+                    <div class="text-center py-5 text-muted small">
+                      <i class="bi bi-clock-history fs-3 d-block mb-2 text-secondary"></i>
+                      No activity history recorded for this support request.
+                    </div>
+                  }
+                }
+              </div>
+            </div>
+          }
         </div>
 
         <div class="modal-footer bg-light py-2">
@@ -687,6 +834,16 @@
                 }
               </select>
             </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Related Asset <span class="text-muted fw-normal">(optional)</span></label>
+            <select class="form-select" [(ngModel)]="editTicketModel.assetId" name="editAssetId">
+              <option [ngValue]="null">— None / Not Applicable —</option>
+              @for (asset of assets; track asset.id) {
+                <option [ngValue]="asset.id">{{ asset.name }} ({{ asset.brand }} {{ asset.model }} • S/N: {{ asset.serialNumber }})</option>
+              }
+            </select>
           </div>
 
           <div class="mb-3">

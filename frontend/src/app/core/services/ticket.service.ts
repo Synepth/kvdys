@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
@@ -8,7 +8,8 @@ import {
   TicketPage,
   CommentResponse,
   CommentCreateRequest,
-  AttachmentResponse
+  AttachmentResponse,
+  TicketActivityResponse
 } from '../../models/ticket';
 
 @Injectable({
@@ -25,18 +26,52 @@ export class TicketService {
     search = '',
     status = '',
     category = '',
-    priority = ''
+    priority = '',
+    assignedUserId?: number | null,
+    unassigned?: boolean | null
   ): Observable<TicketPage> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString());
 
-    if (search)   params = params.set('search', search);
-    if (status)   params = params.set('status', status);
+    if (search) params = params.set('search', search);
+    if (status) params = params.set('status', status);
     if (category) params = params.set('category', category);
     if (priority) params = params.set('priority', priority);
+    if (assignedUserId !== null && assignedUserId !== undefined) {
+      params = params.set('assignedUserId', assignedUserId.toString());
+    }
+    if (unassigned !== null && unassigned !== undefined) {
+      params = params.set('unassigned', unassigned.toString());
+    }
 
     return this.http.get<TicketPage>(this.apiUrl, { params });
+  }
+
+  exportTicketsCsv(
+    search = '',
+    status = '',
+    category = '',
+    priority = '',
+    assignedUserId?: number | null,
+    unassigned?: boolean | null
+  ): Observable<Blob> {
+    let params = new HttpParams();
+    if (search) params = params.set('search', search);
+    if (status) params = params.set('status', status);
+    if (category) params = params.set('category', category);
+    if (priority) params = params.set('priority', priority);
+    if (assignedUserId !== null && assignedUserId !== undefined) {
+      params = params.set('assignedUserId', assignedUserId.toString());
+    }
+    if (unassigned !== null && unassigned !== undefined) {
+      params = params.set('unassigned', unassigned.toString());
+    }
+
+    return this.http.get(`${this.apiUrl}/export/csv`, {
+      params,
+      responseType: 'blob'
+    });
   }
 
   getTicketById(id: number): Observable<TicketResponse> {
@@ -87,5 +122,10 @@ export class TicketService {
     return this.http.get(`${this.apiUrl}/${ticketId}/attachments/${attachmentId}/download`, {
       responseType: 'blob'
     });
+  }
+
+  // Activities / Audit Trail
+  getActivities(ticketId: number): Observable<TicketActivityResponse[]> {
+    return this.http.get<TicketActivityResponse[]>(`${this.apiUrl}/${ticketId}/activities`);
   }
 }

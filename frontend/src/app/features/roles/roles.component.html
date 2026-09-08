@@ -17,18 +17,20 @@
   </div>
 
   <!-- Toolbar -->
-  <div class="d-flex align-items-center gap-2 mb-4">
-    <div class="ms-auto">
-      <button
-        type="button"
-        class="btn btn-primary"
-        data-bs-toggle="modal"
-        data-bs-target="#roleModal"
-        (click)="openCreateRoleModal()">
-        + Add New Role
-      </button>
+  @if (authService.isAdmin()) {
+    <div class="d-flex align-items-center gap-2 mb-4">
+      <div class="ms-auto">
+        <button
+          type="button"
+          class="btn btn-primary"
+          data-bs-toggle="modal"
+          data-bs-target="#roleModal"
+          (click)="openCreateRoleModal()">
+          + Add New Role
+        </button>
+      </div>
     </div>
-  </div>
+  }
 
   <!-- Roles Table -->
   <div class="card shadow-sm border-0">
@@ -41,7 +43,9 @@
               <th>Name</th>
               <th>Description</th>
               <th class="text-center">Assigned Users</th>
-              <th class="text-center">Actions</th>
+              @if (authService.isAdmin()) {
+                <th class="text-center">Actions</th>
+              }
             </tr>
           </thead>
           <tbody>
@@ -53,26 +57,28 @@
                 <td class="text-center">
                   <span class="badge bg-secondary">{{ role.userCount }}</span>
                 </td>
-                <td class="text-center">
-                  <button
-                    class="btn btn-sm btn-outline-warning me-2"
-                    data-bs-toggle="modal"
-                    data-bs-target="#roleModal"
-                    (click)="openEditModal(role)">
-                    Edit
-                  </button>
-                  <button
-                    class="btn btn-sm btn-outline-danger"
-                    [disabled]="role.name === 'ROLE_ADMIN' || role.name === 'ROLE_USER'"
-                    [title]="(role.name === 'ROLE_ADMIN' || role.name === 'ROLE_USER') ? 'System roles cannot be deleted' : 'Delete'"
-                    (click)="deleteRole(role)">
-                    Delete
-                  </button>
-                </td>
+                @if (authService.isAdmin()) {
+                  <td class="text-center">
+                    <button
+                      class="btn btn-sm btn-outline-warning me-2"
+                      data-bs-toggle="modal"
+                      data-bs-target="#roleModal"
+                      (click)="openEditModal(role)">
+                      Edit
+                    </button>
+                    <button
+                      class="btn btn-sm btn-outline-danger"
+                      [disabled]="role.name === 'ROLE_ADMIN' || role.name === 'ROLE_USER'"
+                      [title]="(role.name === 'ROLE_ADMIN' || role.name === 'ROLE_USER') ? 'System roles cannot be deleted' : 'Delete'"
+                      (click)="deleteRole(role)">
+                      Delete
+                    </button>
+                  </td>
+                }
               </tr>
             } @empty {
               <tr>
-                <td colspan="5" class="text-center py-4 text-muted">
+                <td [attr.colspan]="authService.isAdmin() ? 5 : 4" class="text-center py-4 text-muted">
                   No roles found.
                 </td>
               </tr>

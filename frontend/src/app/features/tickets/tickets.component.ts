@@ -6,6 +6,7 @@ import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { TicketService } from '../../core/services/ticket.service';
 import { UserService } from '../../core/services/user.service';
+import { AssetService } from '../../core/services/asset.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import {
@@ -13,9 +14,11 @@ import {
   TicketCreateRequest,
   TicketUpdateRequest,
   CommentResponse,
-  AttachmentResponse
+  AttachmentResponse,
+  TicketActivityResponse
 } from '../../models/ticket';
 import { UserResponse } from '../../models/user';
+import { AssetResponse } from '../../models/asset';
 
 @Component({
   selector: 'app-tickets',
@@ -39,6 +42,9 @@ export class TicketsComponent implements OnInit, OnDestroy {
   selectedStatus = '';
   selectedPriority = '';
   selectedCategory = '';
+  assignedUserId: number | null = null;
+  unassigned = false;
+  activeTab: 'all' | 'my' | 'unassigned' = 'all';
 
   // RxJS Debounce & Cleanup
   private searchSubject = new Subject<string>();
@@ -46,10 +52,11 @@ export class TicketsComponent implements OnInit, OnDestroy {
 
   // Dropdown data
   users: UserResponse[] = [];
+  assets: AssetResponse[] = [];
 
   // Modals & form models
   selectedTicket: TicketResponse | null = null;
-  activeDetailTab: 'details' | 'comments' | 'attachments' = 'details';
+  activeDetailTab: 'details' | 'comments' | 'attachments' | 'activities' = 'details';
 
   newTicket: TicketCreateRequest = this.getEmptyCreateRequest();
   editTicketId: number | null = null;
@@ -67,9 +74,16 @@ export class TicketsComponent implements OnInit, OnDestroy {
   isAttachmentsLoading = false;
   isUploadingAttachment = false;
 
+  // Activities / Audit Trail state
+  activities: TicketActivityResponse[] = [];
+  isActivitiesLoading = false;
+
+  isExporting = false;
+
   constructor(
     private ticketService: TicketService,
     private userService: UserService,
+    private assetService: AssetService,
     public authService: AuthService,
     private toastService: ToastService,
     private route: ActivatedRoute,
@@ -89,10 +103,10 @@ export class TicketsComponent implements OnInit, OnDestroy {
     });
 
     // 2. Initial data load
-    this.loadTickets();
     this.loadUsers();
+    this.loadAssets();
 
-    // 3. Deep-linking support (/tickets?id=123)
+    // 3. Deep-linking support (/tickets?id=123&tab=my)
     this.route.queryParamMap.pipe(
       takeUntil(this.destroy$)
     ).subscribe(params => {
@@ -103,7 +117,21 @@ export class TicketsComponent implements OnInit, OnDestroy {
           this.openTicketById(ticketId);
         }
       }
+
+      const tabParam = params.get('tab');
+      const validTabs: Array<'all' | 'my' | 'unassigned'> = ['all', 'my', 'unassigned'];
+      const nextTab = tabParam && validTabs.includes(tabParam as 'all' | 'my' | 'unassigned')
+        ? (tabParam as 'all' | 'my' | 'unassigned')
+        : 'all';
+
+      if (this.activeTab !== nextTab) {
+        this.setTab(nextTab, false);
+      } else {
+        this.applyTabState(nextTab);
+      }
     });
+
+    this.loadTickets();
   }
 
   ngOnDestroy(): void {
@@ -124,7 +152,9 @@ export class TicketsComponent implements OnInit, OnDestroy {
       this.searchTerm,
       this.selectedStatus,
       this.selectedCategory,
-      this.selectedPriority
+      this.selectedPriority,
+      this.assignedUserId,
+      this.unassigned
     ).subscribe({
       next: (data) => {
         this.tickets = data.content;
@@ -154,7 +184,47 @@ export class TicketsComponent implements OnInit, OnDestroy {
     });
   }
 
+  loadAssets(): void {
+    this.assetService.getAllAssets(0, 999).subscribe({
+      next: (data) => {
+        this.assets = data.content;
+        this.cdr.detectChanges();
+      },
+      error: () => console.warn('Could not load asset list for ticket linking.')
+    });
+  }
+
+  applyTabState(tab: 'all' | 'my' | 'unassigned'): void {
+    this.activeTab = tab;
+    this.assignedUserId = null;
+    this.unassigned = false;
+
+    if (tab === 'my') {
+      const currentUserId = this.authService.userId();
+      this.assignedUserId = currentUserId ?? null;
+    } else if (tab === 'unassigned') {
+      this.unassigned = true;
+    }
+  }
+
+  setTab(tab: 'all' | 'my' | 'unassigned', updateRoute = true): void {
+    this.applyTabState(tab);
+
+    if (updateRoute) {
+      const queryParams = tab === 'all' ? { tab: null } : { tab };
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams,
+        queryParamsHandling: 'merge',
+        replaceUrl: true
+      });
+    }
+
+    this.loadTickets(0);
+  }
+
   onFilterChange(): void {
+    this.activeTab = 'all';
     this.loadTickets(0);
   }
 
@@ -163,7 +233,7 @@ export class TicketsComponent implements OnInit, OnDestroy {
     this.selectedStatus = '';
     this.selectedPriority = '';
     this.selectedCategory = '';
-    this.loadTickets(0);
+    this.setTab('all');
   }
 
   goToPage(page: number): void {
@@ -189,7 +259,8 @@ export class TicketsComponent implements OnInit, OnDestroy {
       category: ticket.category,
       priority: ticket.priority,
       status: newStatus,
-      assignedUserId: ticket.assignedUserId ?? null
+      assignedUserId: ticket.assignedUserId ?? null,
+      assetId: ticket.assetId ?? null
     };
 
     this.ticketService.updateTicket(ticket.id, req).subscribe({
@@ -199,6 +270,7 @@ export class TicketsComponent implements OnInit, OnDestroy {
         if (this.selectedTicket && this.selectedTicket.id === updated.id) {
           this.selectedTicket.status = updated.status;
           this.selectedTicket.updatedAt = updated.updatedAt;
+          this.loadActivities(updated.id);
         }
         this.toastService.success(`Status updated to "${newStatus}".`);
         this.cdr.detectChanges();
@@ -225,7 +297,8 @@ export class TicketsComponent implements OnInit, OnDestroy {
       category: ticket.category,
       priority: ticket.priority,
       status: ticket.status,
-      assignedUserId: currentUserId
+      assignedUserId: currentUserId,
+      assetId: ticket.assetId ?? null
     };
 
     this.ticketService.updateTicket(ticket.id, req).subscribe({
@@ -236,6 +309,7 @@ export class TicketsComponent implements OnInit, OnDestroy {
         ticket.updatedAt = updated.updatedAt;
         if (this.selectedTicket && this.selectedTicket.id === updated.id) {
           this.selectedTicket = { ...this.selectedTicket, ...updated };
+          this.loadActivities(updated.id);
         }
         this.toastService.success(`Support request #${ticket.id} assigned to you.`);
         this.cdr.detectChanges();
@@ -278,7 +352,8 @@ export class TicketsComponent implements OnInit, OnDestroy {
       category: ticket.category,
       priority: ticket.priority,
       status: ticket.status,
-      assignedUserId: ticket.assignedUserId ?? null
+      assignedUserId: ticket.assignedUserId ?? null,
+      assetId: ticket.assetId ?? null
     };
   }
 
@@ -291,6 +366,7 @@ export class TicketsComponent implements OnInit, OnDestroy {
         this.loadTickets(this.currentPage);
         if (this.selectedTicket && this.selectedTicket.id === updated.id) {
           this.selectedTicket = { ...updated };
+          this.loadActivities(updated.id);
         }
         this.editTicketId = null;
       },
@@ -341,6 +417,7 @@ export class TicketsComponent implements OnInit, OnDestroy {
 
     this.loadComments(ticket.id);
     this.loadAttachments(ticket.id);
+    this.loadActivities(ticket.id);
   }
 
   openTicketById(ticketId: number): void {
@@ -374,7 +451,7 @@ export class TicketsComponent implements OnInit, OnDestroy {
     }
   }
 
-  setActiveTab(tab: 'details' | 'comments' | 'attachments'): void {
+  setActiveTab(tab: 'details' | 'comments' | 'attachments' | 'activities'): void {
     this.activeDetailTab = tab;
   }
 
@@ -409,6 +486,7 @@ export class TicketsComponent implements OnInit, OnDestroy {
         this.isSubmittingComment = false;
         this.toastService.success('Comment added.');
         this.loadComments(this.selectedTicket!.id);
+        this.loadActivities(this.selectedTicket!.id);
         this.loadTickets(this.currentPage);
       },
       error: (err) => {
@@ -426,6 +504,7 @@ export class TicketsComponent implements OnInit, OnDestroy {
       next: () => {
         this.toastService.success('Comment deleted.');
         this.loadComments(this.selectedTicket!.id);
+        this.loadActivities(this.selectedTicket!.id);
         this.loadTickets(this.currentPage);
       },
       error: (err) => {
@@ -486,6 +565,7 @@ export class TicketsComponent implements OnInit, OnDestroy {
         fileInput.value = '';
         this.toastService.success('Attachment uploaded successfully.');
         this.loadAttachments(this.selectedTicket!.id);
+        this.loadActivities(this.selectedTicket!.id);
         this.loadTickets(this.currentPage);
       },
       error: (err) => {
@@ -523,6 +603,7 @@ export class TicketsComponent implements OnInit, OnDestroy {
       next: () => {
         this.toastService.success('Attachment deleted.');
         this.loadAttachments(this.selectedTicket!.id);
+        this.loadActivities(this.selectedTicket!.id);
         this.loadTickets(this.currentPage);
       },
       error: (err) => {
@@ -533,6 +614,82 @@ export class TicketsComponent implements OnInit, OnDestroy {
 
   canDeleteAttachment(att: AttachmentResponse): boolean {
     return this.authService.isAdmin() || this.authService.username() === att.uploadedByUsername;
+  }
+
+  // ==================== ACTIVITIES & AUDIT TRAIL ====================
+
+  loadActivities(ticketId: number): void {
+    this.isActivitiesLoading = true;
+    this.ticketService.getActivities(ticketId).subscribe({
+      next: (data) => {
+        this.activities = data;
+        this.isActivitiesLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.isActivitiesLoading = false;
+        console.error('Failed to load activities', err);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  getActivityIcon(actionType: string): string {
+    switch (actionType) {
+      case 'CREATED':
+        return 'bi-plus-circle-fill text-success';
+      case 'STATUS_CHANGED':
+        return 'bi-arrow-repeat text-primary';
+      case 'PRIORITY_CHANGED':
+        return 'bi-exclamation-triangle-fill text-warning';
+      case 'CATEGORY_CHANGED':
+        return 'bi-tag-fill text-info';
+      case 'ASSIGNED':
+      case 'REASSIGNED':
+        return 'bi-person-check-fill text-success';
+      case 'UNASSIGNED':
+        return 'bi-person-dash-fill text-secondary';
+      case 'ASSET_LINKED':
+        return 'bi-box-seam-fill text-primary';
+      case 'ASSET_UNLINKED':
+        return 'bi-box-arrow-up-right text-secondary';
+      case 'COMMENT_ADDED':
+        return 'bi-chat-left-dots-fill text-info';
+      case 'COMMENT_DELETED':
+        return 'bi-trash-fill text-danger';
+      case 'ATTACHMENT_UPLOADED':
+        return 'bi-paperclip text-primary';
+      case 'ATTACHMENT_DELETED':
+        return 'bi-file-earmark-x-fill text-danger';
+      case 'TITLE_CHANGED':
+      case 'DESCRIPTION_CHANGED':
+        return 'bi-pencil-fill text-secondary';
+      default:
+        return 'bi-dot text-secondary';
+    }
+  }
+
+  getActivityBadgeClass(actionType: string): string {
+    switch (actionType) {
+      case 'CREATED':
+      case 'ASSIGNED':
+      case 'REASSIGNED':
+        return 'bg-success-subtle text-success border border-success-subtle';
+      case 'STATUS_CHANGED':
+      case 'ASSET_LINKED':
+      case 'ATTACHMENT_UPLOADED':
+        return 'bg-primary-subtle text-primary border border-primary-subtle';
+      case 'PRIORITY_CHANGED':
+        return 'bg-warning-subtle text-warning-emphasis border border-warning-subtle';
+      case 'COMMENT_ADDED':
+      case 'CATEGORY_CHANGED':
+        return 'bg-info-subtle text-info border border-info-subtle';
+      case 'COMMENT_DELETED':
+      case 'ATTACHMENT_DELETED':
+        return 'bg-danger-subtle text-danger border border-danger-subtle';
+      default:
+        return 'bg-secondary-subtle text-secondary border border-secondary-subtle';
+    }
   }
 
   // ==================== HELPERS ====================
@@ -549,7 +706,7 @@ export class TicketsComponent implements OnInit, OnDestroy {
     switch (priority) {
       case 'High': return 'bg-danger-subtle text-danger border border-danger-subtle';
       case 'Medium': return 'bg-warning-subtle text-warning-emphasis border border-warning-subtle';
-      case 'Low': return 'bg-info-subtle text-info border border-info-subtle';
+      case 'Low': return 'bg-success-subtle text-success border border-success-subtle';
       default: return 'bg-secondary-subtle text-secondary';
     }
   }
@@ -570,7 +727,8 @@ export class TicketsComponent implements OnInit, OnDestroy {
       description: '',
       category: 'Hardware',
       priority: 'Medium',
-      assignedUserId: null
+      assignedUserId: null,
+      assetId: null
     };
   }
 
@@ -581,7 +739,49 @@ export class TicketsComponent implements OnInit, OnDestroy {
       category: 'Hardware',
       priority: 'Medium',
       status: 'Open',
-      assignedUserId: null
+      assignedUserId: null,
+      assetId: null
     };
+  }
+
+  exportToCsv(): void {
+    this.isExporting = true;
+    this.toastService.info('Preparing CSV export...');
+
+    this.ticketService.exportTicketsCsv(
+      this.searchTerm,
+      this.selectedStatus,
+      this.selectedCategory,
+      this.selectedPriority,
+      this.assignedUserId,
+      this.unassigned
+    ).subscribe({
+      next: (blob) => {
+        this.isExporting = false;
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10);
+        const filename = `tickets_export_${dateStr}.csv`;
+        this.downloadBlob(blob, filename);
+        this.toastService.success('Tickets exported to CSV successfully');
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.isExporting = false;
+        console.error('Export error:', err);
+        this.toastService.error('Failed to export tickets to CSV');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private downloadBlob(blob: Blob, filename: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => window.URL.revokeObjectURL(url), 100);
   }
 }

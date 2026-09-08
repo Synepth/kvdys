@@ -118,4 +118,36 @@ public class AssetService {
                 username
         );
     }
+
+    @Transactional(readOnly = true)
+    public byte[] exportAssetsToCsv(String search, String status, String category) {
+        org.springframework.data.domain.Pageable unpaged = org.springframework.data.domain.PageRequest.of(0, 10000, org.springframework.data.domain.Sort.by("id").ascending());
+        List<Asset> assets = assetRepository.findByFilters(search, status, category, unpaged).getContent();
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(com.synepth.kvdys.util.CsvExportUtil.UTF_8_BOM);
+
+        sb.append(com.synepth.kvdys.util.CsvExportUtil.toCsvLine(List.of(
+                "ID", "Serial Number", "Brand", "Model", "Asset Name", "Type", "Status", "Department", "Assigned Staff"
+        )));
+
+        for (Asset asset : assets) {
+            String deptName = asset.getDepartment() != null ? asset.getDepartment().getName() : "";
+            String assignedTo = asset.getAssignedUser() != null ? asset.getAssignedUser().getUsername() : "Unassigned";
+
+            sb.append(com.synepth.kvdys.util.CsvExportUtil.toCsvLine(List.of(
+                    "#" + asset.getId(),
+                    asset.getSerialNumber() != null ? asset.getSerialNumber() : "",
+                    asset.getBrand() != null ? asset.getBrand() : "",
+                    asset.getModel() != null ? asset.getModel() : "",
+                    asset.getName() != null ? asset.getName() : "",
+                    asset.getType() != null ? asset.getType() : "",
+                    asset.getStatus() != null ? asset.getStatus() : "",
+                    deptName,
+                    assignedTo
+            )));
+        }
+
+        return sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    }
 }

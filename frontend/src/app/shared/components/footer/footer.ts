@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 
-export const APP_VERSION = 'v0.1.21';
+export const APP_VERSION = 'v0.11.7';
 
 @Component({
   selector: 'app-footer',
@@ -10,5 +10,5 @@ export const APP_VERSION = 'v0.1.21';
   styleUrl: './footer.scss'
 })
 export class FooterComponent {
-  appVersion = 'v0.1.21';
+  appVersion = 'v0.11.7';
 }

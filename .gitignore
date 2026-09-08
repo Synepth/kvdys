@@ -45,4 +45,8 @@ build/
 *.log
 
 # Uploaded Files
-**/uploads/
+**/uploads/
+
+# AI Guidelines
+GEMINI.md
+gemini.md

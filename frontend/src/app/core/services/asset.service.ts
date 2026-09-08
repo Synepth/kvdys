@@ -29,6 +29,22 @@ export class AssetService {
     return this.http.get<AssetPage>(this.apiUrl, { params });
   }
 
+  exportAssetsCsv(
+    search = '',
+    status = '',
+    category = ''
+  ): Observable<Blob> {
+    let params = new HttpParams();
+    if (search)   params = params.set('search', search);
+    if (status)   params = params.set('status', status);
+    if (category) params = params.set('category', category);
+
+    return this.http.get(`${this.apiUrl}/export/csv`, {
+      params,
+      responseType: 'blob'
+    });
+  }
+
   createAsset(request: AssetCreateRequest): Observable<AssetResponse> {
     return this.http.post<AssetResponse>(this.apiUrl, request);
   }

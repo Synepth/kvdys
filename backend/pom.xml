@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.synepth</groupId>
 	<artifactId>kvdys</artifactId>
-	<version>0.1.10</version>
+	<version>0.11.7</version>
 	<name/>
 	<description>Enterprise Asset and Support Management System</description>
 	<url/>

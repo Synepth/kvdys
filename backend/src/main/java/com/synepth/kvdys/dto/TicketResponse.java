@@ -18,21 +18,21 @@ public class TicketResponse {
     private String priority;
     private String status;
 
-    // Creator info
     private Long createdById;
     private String createdByUsername;
     private String createdByName;
 
-    // Assigned staff info (can be null)
     private Long assignedUserId;
     private String assignedUsername;
     private String assignedName;
 
-    // Timestamps
+    private Long assetId;
+    private String assetName;
+    private String assetSerialNumber;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    // Quick counts for UI badges
     private int commentCount;
     private int attachmentCount;
 }

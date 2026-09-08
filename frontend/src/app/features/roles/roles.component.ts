@@ -3,6 +3,7 @@ import {CommonModule} from '@angular/common';
 import { RoleService } from '../../core/services/role.service';
 import { RoleResponse, RoleCreateRequest } from '../../models/role';
 import { ToastService } from '../../core/services/toast.service';
+import { AuthService } from '../../core/services/auth.service';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 
 @Component({
@@ -19,7 +20,13 @@ export class RolesComponent implements OnInit {
   errorMessage: string | null = null;
   isInitialLoading = true;
 
-  constructor(private roleService: RoleService, private fb: FormBuilder, private toastService: ToastService, private cdr: ChangeDetectorRef) {}
+  constructor(
+    private roleService: RoleService,
+    private fb: FormBuilder,
+    private toastService: ToastService,
+    private cdr: ChangeDetectorRef,
+    public authService: AuthService
+  ) {}
 
   ngOnInit(): void {
     this.initForm();

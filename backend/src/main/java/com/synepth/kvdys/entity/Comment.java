@@ -24,7 +24,7 @@ public class Comment {
     @JoinColumn(name = "author_id")
     private User author;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
     private java.time.LocalDateTime createdAt;

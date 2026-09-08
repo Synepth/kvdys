@@ -21,4 +21,6 @@ public class TicketCreateRequest {
     private String priority;
 
     private Long assignedUserId;
+
+    private Long assetId;
 }

@@ -36,10 +36,30 @@ public class TicketController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String category,
-            @RequestParam(required = false) String priority) {
+            @RequestParam(required = false) String priority,
+            @RequestParam(required = false) Long assignedUserId,
+            @RequestParam(required = false) Boolean unassigned) {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
-        return ResponseEntity.ok(ticketService.getAllTickets(search, status, category, priority, pageable));
+        return ResponseEntity.ok(ticketService.getAllTickets(search, status, category, priority, assignedUserId, unassigned, pageable));
+    }
+
+    @GetMapping("/export/csv")
+    public ResponseEntity<byte[]> exportTicketsCsv(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String priority,
+            @RequestParam(required = false) Long assignedUserId,
+            @RequestParam(required = false) Boolean unassigned) {
+
+        byte[] csvData = ticketService.exportTicketsToCsv(search, status, category, priority, assignedUserId, unassigned);
+        String filename = "tickets_export_" + java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".csv";
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
+                .body(csvData);
     }
 
     @GetMapping("/{id}")
@@ -133,5 +153,12 @@ public class TicketController {
                 .contentType(MediaType.parseMediaType(attachment.getContentType() != null ? attachment.getContentType() : "application/octet-stream"))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + attachment.getFileName() + "\"; filename*=UTF-8''" + encodedFileName)
                 .body(resource);
+    }
+
+    // ACTIVITIES / AUDIT TRAIL
+
+    @GetMapping("/{id}/activities")
+    public ResponseEntity<List<TicketActivityResponse>> getActivities(@PathVariable Long id) {
+        return ResponseEntity.ok(ticketService.getActivitiesByTicketId(id));
     }
 }

@@ -17,4 +17,7 @@ public class TicketUpdateRequest {
     @NotBlank(message = "Status is required")
     private String status;
     private Long assignedUserId;
+
+    private Long assetId;
+
 }

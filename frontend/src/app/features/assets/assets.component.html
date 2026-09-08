@@ -15,12 +15,21 @@
         <h4 class="fw-bold m-0 text-dark">Asset Management</h4>
         <small class="text-secondary">Manage corporate assets, device assignments, and operational statuses</small>
       </div>
-      <button class="btn btn-primary d-flex align-items-center gap-2"
-              data-bs-toggle="modal"
-              data-bs-target="#createAssetModal"
-              (click)="openCreateModal()">
-        <i class="bi bi-plus-lg"></i> Add New Asset
-      </button>
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-outline-success d-flex align-items-center gap-2"
+                [disabled]="isExporting"
+                (click)="exportToCsv()"
+                title="Export filtered assets to CSV">
+          <i class="bi bi-file-earmark-spreadsheet"></i>
+          {{ isExporting ? 'Exporting...' : 'Export CSV' }}
+        </button>
+        <button class="btn btn-primary d-flex align-items-center gap-2"
+                data-bs-toggle="modal"
+                data-bs-target="#createAssetModal"
+                (click)="openCreateModal()">
+          <i class="bi bi-plus-lg"></i> Add New Asset
+        </button>
+      </div>
     </div>
 
   <!-- Filter Panel -->

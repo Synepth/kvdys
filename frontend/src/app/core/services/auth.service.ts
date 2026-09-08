@@ -21,7 +21,15 @@ export class AuthService {
   readonly username = computed(() => this.currentUser()?.username ?? '');
   readonly email = computed(() => this.currentUser()?.email ?? '');
   readonly avatarUrl = computed(() => this.currentUser()?.avatarUrl ?? null);
-  readonly roles = computed(() => this.getRolesFromToken(this.getToken()));
+  readonly roles = computed(() => {
+    const user = this.currentUser();
+    if (!user) return [];
+    if (user.roles && Array.isArray(user.roles) && user.roles.length > 0) {
+      return user.roles;
+    }
+    const token = user.token || this.getToken();
+    return this.getRolesFromToken(token);
+  });
   readonly isAdmin = computed(() => this.hasRole('ROLE_ADMIN'));
   readonly userId = computed(() => this.currentUser()?.userId ?? null);
 
@@ -50,7 +58,10 @@ export class AuthService {
 
   hasRole(role: string): boolean {
     const currentRoles = this.roles();
-    return currentRoles.includes(role) || currentRoles.includes(`ROLE_${role}`);
+    const cleanRole = role.replace(/^ROLE_/, '');
+    return currentRoles.includes(role) ||
+           currentRoles.includes(`ROLE_${cleanRole}`) ||
+           currentRoles.includes(cleanRole);
   }
 
   updateStoredEmail(email: string): void {
@@ -71,18 +82,41 @@ export class AuthService {
     }
   }
 
-  private getRolesFromToken(token: string | null): string[] {
-    if (!token) return [];
+  private decodeJwtPayload(token: string | null): any {
+    if (!token) return null;
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.roles ?? [];
+      const parts = token.split('.');
+      if (parts.length < 2) return null;
+      let base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      while (base64.length % 4 !== 0) {
+        base64 += '=';
+      }
+      const jsonStr = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      return JSON.parse(jsonStr);
     } catch {
-      return [];
+      try {
+        return JSON.parse(atob(token.split('.')[1]));
+      } catch {
+        return null;
+      }
     }
+  }
+
+  private getRolesFromToken(token: string | null): string[] {
+    const payload = this.decodeJwtPayload(token);
+    return payload?.roles ?? [];
   }
 
   private saveAuthData(data: LoginResponse): void {
     try {
+      if (!data.roles || data.roles.length === 0) {
+        data.roles = this.getRolesFromToken(data.token);
+      }
       localStorage.setItem(TOKEN_KEY, data.token);
       localStorage.setItem(USER_KEY, JSON.stringify(data));
       this.currentUser.set(data);
@@ -104,20 +138,19 @@ export class AuthService {
         return null;
       }
 
-      return JSON.parse(stored) as LoginResponse;
+      const user = JSON.parse(stored) as LoginResponse;
+      if (!user.roles || user.roles.length === 0) {
+        user.roles = this.getRolesFromToken(token);
+      }
+      return user;
     } catch {
       return null;
     }
   }
 
   private isTokenExpired(token: string): boolean {
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      // exp is in seconds, Date.now() is in milliseconds
-      return payload.exp * 1000 < Date.now();
-    } catch {
-      // If we can't decode it, treat it as expired
-      return true;
-    }
+    const payload = this.decodeJwtPayload(token);
+    if (!payload || !payload.exp) return true;
+    return payload.exp * 1000 < Date.now();
   }
 }

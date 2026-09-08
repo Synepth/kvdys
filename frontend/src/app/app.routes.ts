@@ -38,7 +38,6 @@ export const routes: Routes = [
       },
       {
         path: 'users',
-        canActivate: [adminGuard],
         loadComponent: () =>
           import('./features/users/users.component').then(
             (m) => m.UsersComponent
@@ -46,7 +45,6 @@ export const routes: Routes = [
       },
       {
         path: 'departments',
-        canActivate: [adminGuard],
         loadComponent: () =>
           import('./features/departments/departments.component').then(
             (m) => m.DepartmentsComponent
@@ -54,7 +52,6 @@ export const routes: Routes = [
       },
       {
         path: 'roles',
-        canActivate: [adminGuard],
         loadComponent: () =>
           import('./features/roles/roles.component').then(
             (m) => m.RolesComponent

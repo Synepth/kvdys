@@ -28,6 +28,7 @@ export class AssetsComponent implements OnInit, OnDestroy {
   totalElements = 0;
   isInitialLoading = true;
   isLoading = false;
+  isExporting = false;
 
   // Dropdown data
   users: UserResponse[] = [];
@@ -253,5 +254,43 @@ export class AssetsComponent implements OnInit, OnDestroy {
       departmentId: null,
       assignedUserId: null
     };
+  }
+
+  exportToCsv(): void {
+    this.isExporting = true;
+    this.toastService.info('Preparing CSV export...');
+
+    this.assetService.exportAssetsCsv(
+      this.searchTerm,
+      this.selectedStatus,
+      this.selectedCategory
+    ).subscribe({
+      next: (blob) => {
+        this.isExporting = false;
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10);
+        const filename = `assets_export_${dateStr}.csv`;
+        this.downloadBlob(blob, filename);
+        this.toastService.success('Assets exported to CSV successfully');
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.isExporting = false;
+        console.error('Export error:', err);
+        this.toastService.error('Failed to export assets to CSV');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private downloadBlob(blob: Blob, filename: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => window.URL.revokeObjectURL(url), 100);
   }
 }
