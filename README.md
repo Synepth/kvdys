@@ -23,9 +23,9 @@ kvdys/
 ├── backend/                                # Spring Boot REST API
 │   └── src/main/java/com/synepth/kvdys/
 │       ├── config/                         # SecurityConfig (CORS, CSRF, URL rules), WebConfig
-│       ├── controller/                     # REST Controllers (Auth, User, Department, Role, Asset, Dashboard, Health)
+│       ├── controller/                     # REST Controllers (Auth, User, Department, Role, Asset, Dashboard, Health, Ticket)
 │       ├── dto/                            # Request & Response DTOs
-│       ├── entity/                         # JPA Entities (User, Role, Department, Asset)
+│       ├── entity/                         # JPA Entities (User, Role, Department, Asset, Ticket, Comment, Attachment)
 │       ├── exception/                      # GlobalExceptionHandler
 │       ├── repository/                     # Spring Data JPA Repositories
 │       ├── security/                       # JwtUtil, JwtAuthFilter, UserDetailsServiceImpl
@@ -81,9 +81,9 @@ kvdys/
 | Access Level | HTTP Method & Endpoints |
 |:-------------|:------------------------|
 | **Public** | `POST /api/v1/auth/**`, `GET /api/v1/health`, `/swagger-ui/**`, `/v3/api-docs/**`, `/uploads/**` |
-| **Self / Authenticated** | `GET/PUT /api/v1/users/me`, `POST/DELETE /api/v1/users/me/avatar`, `POST /api/v1/users/change-password` |
-| **Admin Only (`ROLE_ADMIN`)** | `POST /api/v1/users`, `PUT /api/v1/users/{id}`, `DELETE /api/v1/**` (except user avatar) |
-| **Authenticated Users** | `GET /api/v1/dashboard/stats`, `GET/POST/PUT /api/v1/assets/**`, `GET/POST/PUT /api/v1/departments/**`, `GET/POST/PUT /api/v1/roles/**`, `GET /api/v1/users/**` |
+| **Self / Authenticated** | `GET/PUT /api/v1/users/me`, `POST/DELETE /api/v1/users/me/avatar`, `POST /api/v1/users/change-password`, `DELETE /api/v1/tickets/*/comments/*`, `DELETE /api/v1/tickets/*/attachments/*` |
+| **Admin Only (`ROLE_ADMIN`)** | `POST /api/v1/users`, `PUT /api/v1/users/{id}`, `DELETE /api/v1/**` (except user avatar, ticket comments & attachments) |
+| **Authenticated Users** | `GET /api/v1/dashboard/stats`, `GET/POST/PUT /api/v1/assets/**`, `GET/POST/PUT /api/v1/departments/**`, `GET/POST/PUT /api/v1/roles/**`, `GET /api/v1/users/**`, `GET/POST/PUT /api/v1/tickets/**` |
 
 ### Frontend Route Protection & Interceptors
 
@@ -143,11 +143,13 @@ kvdys/
 - Assigned user count per role
 - Protection preventing deletion of core system roles (`ROLE_ADMIN`, `ROLE_USER`) and roles in active use
 
-### ⏳ Support Tickets (UI Implemented / Backend In Progress)
+### ✅ Support Tickets
 - Interactive ticket tracking interface with filter by status (`Open`, `In Review`, `Resolved`, `Cancelled`)
-- Search by title, requestor, and ticket ID
-- Priority tags (`Low`, `Medium`, `High`) and status badges
-- Create, edit, detail view, and delete ticket operations (currently in-memory client state)
+- Search by title, requestor, and ticket ID with priority badges (`Low`, `Medium`, `High`)
+- Full backend REST API with CRUD, multi-criteria search, category/priority/status filters, and pagination
+- Commenting system allowing interactive discussions with author and admin deletion permissions
+- Multipart file attachments (up to 10MB) with disk storage in `uploads/tickets/` and static downloading
+- Safe cascade deletion automatically removing comments, attachments, and disk files when tickets are deleted
 
 ### ✅ Global UI / UX
 - Clean Bootstrap 5 responsive dashboard layout with collapsible sidebar and navbar
@@ -215,6 +217,23 @@ kvdys/
 | `POST` | `/api/v1/assets` | Authenticated | Create a new asset |
 | `PUT` | `/api/v1/assets/{id}` | Authenticated | Update existing asset |
 | `DELETE` | `/api/v1/assets/{id}` | Admin | Delete asset |
+
+### Tickets, Comments & Attachments
+
+| Method | Endpoint | Access | Description |
+|:-------|:---------|:-------|:------------|
+| `GET` | `/api/v1/tickets` | Authenticated | Paginated ticket list (`page`, `size`, `search`, `status`, `category`, `priority`) |
+| `GET` | `/api/v1/tickets/{id}` | Authenticated | Get ticket detail by ID with comment and attachment counts |
+| `POST` | `/api/v1/tickets` | Authenticated | Create a new support ticket (auto-sets creator & status) |
+| `PUT` | `/api/v1/tickets/{id}` | Authenticated | Update ticket details, status, and assigned staff |
+| `DELETE` | `/api/v1/tickets/{id}` | Admin | Delete ticket with cascade file and comment cleanup |
+| `GET` | `/api/v1/tickets/{id}/comments` | Authenticated | List all comments for a ticket |
+| `POST` | `/api/v1/tickets/{id}/comments` | Authenticated | Post a comment on a ticket |
+| `DELETE` | `/api/v1/tickets/{ticketId}/comments/{commentId}` | Author / Admin | Delete a comment |
+| `GET` | `/api/v1/tickets/{id}/attachments` | Authenticated | List all file attachments for a ticket |
+| `POST` | `/api/v1/tickets/{id}/attachments` | Authenticated | Upload file attachment (multipart, up to 10MB) |
+| `GET` | `/api/v1/tickets/{ticketId}/attachments/{attachmentId}/download` | Authenticated | Download attachment with original filename |
+| `DELETE` | `/api/v1/tickets/{ticketId}/attachments/{attachmentId}` | Uploader / Admin | Delete file attachment and file on disk |
 
 *Swagger UI interactive documentation available at:* `http://localhost:8080/swagger-ui.html`
 

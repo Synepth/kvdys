@@ -1,47 +1,38 @@
-<div class="p-3">
-  <ul class="nav nav-pills flex-column gap-1">
-    <li class="nav-item">
-      <a class="nav-link d-flex align-items-center gap-2"
-         routerLink="/"
-         routerLinkActive="active"
-         [routerLinkActiveOptions]="{exact: true}">
-        <i class="bi bi-speedometer2"></i> Dashboard
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link d-flex align-items-center gap-2"
-         routerLink="/assets"
-         routerLinkActive="active">
-        <i class="bi bi-box-seam"></i> Assets
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link d-flex align-items-center gap-2"
-         routerLink="/tickets"
-         routerLinkActive="active">
-        <i class="bi bi-life-preserver"></i> Support Requests
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link d-flex align-items-center gap-2"
-         routerLink="/users"
-         routerLinkActive="active">
-        <i class="bi bi-people"></i> Users
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link d-flex align-items-center gap-2"
-         routerLink="/departments"
-         routerLinkActive="active">
-        <i class="bi bi-diagram-3"></i> Departments
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link d-flex align-items-center gap-2"
-         routerLink="/roles"
-         routerLinkActive="active">
-        <i class="bi bi-shield-lock"></i> Roles
-      </a>
-    </li>
+<div class="sidebar-wrapper h-100 d-flex flex-column"
+     [class.collapsed]="sidebarService.isCollapsed()">
+
+  <!-- Sidebar Ceiling: Toggle Button -->
+  <div class="sidebar-ceiling mb-1">
+    <button type="button"
+            class="ceiling-toggle-btn"
+            (click)="sidebarService.toggle()"
+            [attr.title]="sidebarService.isCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+            [attr.aria-label]="sidebarService.isCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'">
+      <span class="nav-icon-box d-flex align-items-center justify-content-center">
+        <i class="bi bi-list fs-4"></i>
+      </span>
+      <span class="nav-label text-truncate">Collapse</span>
+    </button>
+  </div>
+
+  <hr class="sidebar-divider my-2">
+
+  <!-- Nav Items -->
+  <ul class="nav nav-pills flex-column gap-1 mb-0">
+    @for (item of navItems; track item.route) {
+      <li class="nav-item">
+        <a class="nav-link d-flex align-items-center p-0"
+           [routerLink]="item.route"
+           routerLinkActive="active"
+           [routerLinkActiveOptions]="{exact: !!item.exact}"
+           [attr.title]="sidebarService.isCollapsed() ? item.label : null"
+           [attr.aria-label]="item.label">
+          <span class="nav-icon-box d-flex align-items-center justify-content-center">
+            <i class="bi {{ item.icon }} fs-5"></i>
+          </span>
+          <span class="nav-label text-truncate">{{ item.label }}</span>
+        </a>
+      </li>
+    }
   </ul>
 </div>

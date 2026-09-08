@@ -1,12 +1,112 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary px-4 shadow-sm">
-  <div class="container-fluid justify-content-between">
+<nav class="navbar navbar-expand navbar-dark bg-primary px-3 px-md-4 shadow-sm">
+  <div class="container-fluid justify-content-between p-0">
 
-    <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="#">
+    <a class="navbar-brand fw-bold d-flex align-items-center gap-2 m-0" routerLink="/">
       <span>KVDYS</span>
-      <span class="badge bg-white text-primary fs-7">V1.0</span>
+      <span class="badge bg-white text-primary fs-7 font-monospace">{{ appVersion }}</span>
     </a>
 
     <div class="d-flex align-items-center gap-3">
+
+      <!-- Notification Bell Dropdown -->
+      <div class="dropdown">
+        <button class="btn btn-link text-white position-relative p-1 border-0 shadow-none text-decoration-none"
+                type="button"
+                data-bs-toggle="dropdown"
+                data-bs-auto-close="outside"
+                aria-expanded="false"
+                (click)="onOpenNotificationsDropdown()"
+                title="Notifications">
+          <i class="bi bi-bell fs-5"></i>
+          @if (notificationService.unreadCount() > 0) {
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light"
+                  style="font-size: 10px; padding: 0.3em 0.55em;">
+              {{ notificationService.unreadCount() > 99 ? '99+' : notificationService.unreadCount() }}
+              <span class="visually-hidden">unread notifications</span>
+            </span>
+          }
+        </button>
+
+        <div class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 p-0"
+             style="width: 360px; max-width: 90vw; border-radius: 10px; overflow: hidden;">
+          <!-- Header -->
+          <div class="d-flex justify-content-between align-items-center px-3 py-2 bg-light border-bottom">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-bell-fill text-primary"></i>
+              <span class="fw-bold small text-dark">Notifications</span>
+              @if (notificationService.unreadCount() > 0) {
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill small">
+                  {{ notificationService.unreadCount() }} new
+                </span>
+              }
+            </div>
+            @if (notificationService.unreadCount() > 0) {
+              <button class="btn btn-link btn-sm text-primary p-0 text-decoration-none small fw-semibold"
+                      (click)="markAllAsRead()">
+                Mark all as read
+              </button>
+            }
+          </div>
+
+          <!-- Notification Items List -->
+          <div class="overflow-auto" style="max-height: 380px;">
+            @if (isNotificationsLoading() && notifications().length === 0) {
+              <div class="text-center py-4 text-muted small">
+                <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                Loading notifications...
+              </div>
+            } @else {
+              @for (n of notifications(); track n.id) {
+                <div class="px-3 py-2 border-bottom notification-item position-relative"
+                     [class.bg-white]="n.read || n.isRead"
+                     [class.bg-primary-subtle]="!n.read && !n.isRead"
+                     (click)="handleNotificationClick(n)"
+                     style="cursor: pointer; transition: background-color 0.15s ease-in-out;">
+                  <div class="d-flex align-items-start gap-2">
+                    <div class="mt-1 flex-shrink-0">
+                      @if (n.actorAvatarUrl) {
+                        <img [src]="'http://localhost:8080' + n.actorAvatarUrl"
+                             alt="Avatar"
+                             class="rounded-circle"
+                             style="width: 32px; height: 32px; object-fit: cover;">
+                      } @else {
+                        <div class="rounded-circle d-flex align-items-center justify-content-center"
+                             [ngClass]="getNotificationIconBg(n.type)"
+                             style="width: 32px; height: 32px;">
+                          <i [class]="'bi ' + getNotificationIcon(n.type)"></i>
+                        </div>
+                      }
+                    </div>
+                    <div class="flex-grow-1 min-w-0">
+                      <div class="d-flex justify-content-between align-items-baseline gap-1">
+                        <span class="fw-semibold small text-dark text-truncate d-block" style="max-width: 190px;">
+                          {{ n.title }}
+                        </span>
+                        <small class="text-muted text-nowrap" style="font-size: 11px;">
+                          {{ getTimeAgo(n.createdAt) }}
+                        </small>
+                      </div>
+                      <p class="mb-0 text-secondary small text-break" style="font-size: 12px; line-height: 1.35;">
+                        {{ n.message }}
+                      </p>
+                    </div>
+                    @if (!n.read && !n.isRead) {
+                      <span class="p-1 bg-primary rounded-circle mt-2 flex-shrink-0"
+                            title="Unread"
+                            style="width: 7px; height: 7px;"></span>
+                    }
+                  </div>
+                </div>
+              } @empty {
+                <div class="text-center py-5 text-muted small">
+                  <i class="bi bi-bell-slash fs-3 d-block mb-2 text-secondary"></i>
+                  <span>No notifications yet. You're all caught up!</span>
+                </div>
+              }
+            }
+          </div>
+        </div>
+      </div>
 
       <div class="dropdown">
         <button class="btn btn-link text-white text-decoration-none dropdown-toggle d-flex align-items-center gap-2 p-0 border-0 shadow-none" type="button" data-bs-toggle="dropdown" aria-expanded="false">

@@ -45,13 +45,23 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/health").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
-                        // Profile avatar - allow any authenticated user
+                        // Profile & self endpoints - allow any authenticated user
+                        .requestMatchers("/api/v1/users/me/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/users/me").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/users/me/avatar").authenticated()
-                        // Admin only
+                        .requestMatchers(HttpMethod.POST, "/api/v1/users/change-password").authenticated()
+                        // Ticket comment & attachment - author/uploader or admin handled in service
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/tickets/*/comments/*").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/tickets/*/attachments/*").authenticated()
+                        // Admin only mutations (Users, Departments, Roles, Global Deletes)
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/v1/users").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/users/*").hasRole("ADMIN")
-                        // Authenticated users
+                        .requestMatchers(HttpMethod.POST, "/api/v1/users", "/api/v1/users/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/users/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/departments", "/api/v1/departments/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/departments/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/roles", "/api/v1/roles/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/roles/**").hasRole("ADMIN")
+                        // Authenticated users (can view/read all resources)
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
@@ -63,7 +73,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of("http://localhost:4200"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

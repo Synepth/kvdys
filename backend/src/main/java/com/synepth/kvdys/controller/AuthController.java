@@ -14,6 +14,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
@@ -41,12 +43,17 @@ public class AuthController {
 
         String token = jwtUtil.generateToken(userDetails);
 
+        List<String> roles = user.getRoles().stream()
+                .map(r -> r.getName())
+                .toList();
+
         return ResponseEntity.ok(new LoginResponse(
                 token,
                 user.getUsername(),
                 user.getEmail(),
                 user.getId(),
-                user.getAvatarUrl()
+                user.getAvatarUrl(),
+                roles
         ));
     }
 }

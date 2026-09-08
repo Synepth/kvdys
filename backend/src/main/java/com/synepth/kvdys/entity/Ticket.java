@@ -1,31 +1,54 @@
 package com.synepth.kvdys.entity;
 
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+
+@Entity
+@Table(name = "tickets")
+@Getter
+@Setter
+@NoArgsConstructor
 public class Ticket {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Title is required")
+    @Column(nullable = false)
     private String title;
 
-    @Size(max = 255, message = "Description can be at most 255 characters")
+    @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(nullable = false)
+    private String category;
+
+    @Column(nullable = false)
     private String priority;
 
+    @Column(nullable = false)
     private String status;
 
-    private String createdBy;
+    private java.time.LocalDateTime createdAt;
 
-    private String comment;
+    private java.time.LocalDateTime updatedAt;
 
-    private String createdAt;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by")
+    private User createdBy;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "updated_by")
+    private User updatedBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_user_id")
+    private User assignedUser;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "asset_id")
+    private Asset asset;
 }

@@ -14,4 +14,10 @@ public class DashboardStatsResponse {
     private long retiredAssets;
     private long assignedAssets;
     private long unassignedAssets;
+
+    // Ticket Statistics
+    private long totalTickets;
+    private long openTickets;
+    private long inReviewTickets;
+    private long resolvedTickets;
 }

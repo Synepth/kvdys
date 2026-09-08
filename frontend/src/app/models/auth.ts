@@ -9,4 +9,5 @@ export interface LoginResponse {
   email: string;
   userId: number;
   avatarUrl?: string | null;
+  roles?: string[];
 }

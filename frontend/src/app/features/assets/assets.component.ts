@@ -1,12 +1,15 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { AssetCreateRequest, AssetResponse } from '../../models/asset';
 import { AssetService } from '../../core/services/asset.service';
 import { UserService } from '../../core/services/user.service';
 import { UserResponse } from '../../models/user';
 import { DepartmentService, DepartmentResponse } from '../../core/services/department.service';
+import { AuthService } from '../../core/services/auth.service';
+import { ToastService } from '../../core/services/toast.service';
 
 @Component({
   selector: 'app-assets',
@@ -14,11 +17,18 @@ import { DepartmentService, DepartmentResponse } from '../../core/services/depar
   imports: [CommonModule, FormsModule],
   templateUrl: './assets.component.html'
 })
-export class AssetsComponent implements OnInit {
+export class AssetsComponent implements OnInit, OnDestroy {
 
-  // Table data
+  // Table data & pagination
   assets: AssetResponse[] = [];
   selectedAsset: AssetResponse | null = null;
+  currentPage = 0;
+  pageSize = 10;
+  totalPages = 0;
+  totalElements = 0;
+  isInitialLoading = true;
+  isLoading = false;
+  isExporting = false;
 
   // Dropdown data
   users: UserResponse[] = [];
@@ -29,41 +39,68 @@ export class AssetsComponent implements OnInit {
   selectedStatus = '';
   selectedCategory = '';
 
-  // Pagination state
-  currentPage = 0;
-  pageSize = 10;
-  totalPages = 0;
-  totalElements = 0;
+  // RxJS Debounce & Cleanup
+  private searchSubject = new Subject<string>();
+  private destroy$ = new Subject<void>();
 
   // Forms
   editAssetModel: AssetCreateRequest = this.getEmptyAssetRequest();
   editAssetId: number | null = null;
   newAsset: AssetCreateRequest = this.getEmptyAssetRequest();
 
-  errorMessage: string | null = null;
-
   constructor(
     private assetService: AssetService,
     private userService: UserService,
     private departmentService: DepartmentService,
+    public authService: AuthService,
+    private toastService: ToastService,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
+    // 1. Debounced real-time search
+    this.searchSubject.pipe(
+      debounceTime(350),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe((term) => {
+      this.searchTerm = term;
+      this.loadAssets(0);
+    });
+
+    // 2. Initial load
     this.loadAssets();
     this.loadDropdownData();
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  onSearchInput(value: string): void {
+    this.searchTerm = value;
+    this.searchSubject.next(value);
+  }
+
   loadAssets(page = this.currentPage): void {
+    this.isLoading = true;
     this.assetService.getAllAssets(page, this.pageSize, this.searchTerm, this.selectedStatus, this.selectedCategory).subscribe({
       next: (data) => {
         this.assets = data.content;
         this.totalPages = data.totalPages;
         this.totalElements = data.totalElements;
         this.currentPage = data.number;
+        this.isLoading = false;
+        this.isInitialLoading = false;
         this.cdr.detectChanges();
       },
-      error: () => this.showError('Failed to load assets.')
+      error: () => {
+        this.isLoading = false;
+        this.isInitialLoading = false;
+        this.toastService.error('Failed to load assets.');
+        this.cdr.detectChanges();
+      }
     });
   }
 
@@ -97,19 +134,27 @@ export class AssetsComponent implements OnInit {
         this.departments = departments;
         this.cdr.detectChanges();
       },
-      error: () => this.showError('Failed to load users/departments for dropdowns.')
+      error: () => this.toastService.warning('Failed to load users or departments for dropdowns.')
     });
   }
 
+  openCreateModal(): void {
+    this.newAsset = this.getEmptyAssetRequest();
+  }
+
   createAsset(): void {
-    if (!this.newAsset.serialNumber || !this.newAsset.name) return;
+    if (!this.newAsset.serialNumber?.trim() || !this.newAsset.name?.trim()) {
+      this.toastService.warning('Asset Name and Serial Number are required.');
+      return;
+    }
 
     this.assetService.createAsset(this.newAsset).subscribe({
       next: () => {
-        this.loadAssets(this.currentPage);
+        this.toastService.success('Asset created successfully.');
+        this.loadAssets(0);
         this.newAsset = this.getEmptyAssetRequest();
       },
-      error: (err) => this.showError(err?.error?.message || 'Failed to create asset.')
+      error: (err) => this.toastService.error(err?.error?.message || 'Failed to create asset.')
     });
   }
 
@@ -139,22 +184,31 @@ export class AssetsComponent implements OnInit {
     if (!this.editAssetId) return;
 
     this.assetService.updateAsset(this.editAssetId, this.editAssetModel).subscribe({
-      next: () => {
+      next: (updated) => {
+        this.toastService.success('Asset updated successfully.');
         this.loadAssets(this.currentPage);
+        if (this.selectedAsset && this.selectedAsset.id === updated.id) {
+          this.selectedAsset = { ...updated };
+        }
         this.editAssetId = null;
         this.editAssetModel = this.getEmptyAssetRequest();
       },
-      error: (err) => this.showError(err?.error?.message || 'Failed to update asset.')
+      error: (err) => this.toastService.error(err?.error?.message || 'Failed to update asset.')
     });
   }
 
-  deleteAsset(id: number, serialNumber: string): void {
-    if (confirm(`Asset with serial number ${serialNumber} will be deleted. Are you sure?`)) {
-      this.assetService.deleteAsset(id).subscribe({
-        next: () => this.loadAssets(this.currentPage),
-        error: () => this.showError('Failed to delete asset.')
-      });
+  deleteAsset(asset: AssetResponse): void {
+    if (!confirm(`Are you sure you want to delete asset "${asset.name}" (${asset.serialNumber})?`)) {
+      return;
     }
+
+    this.assetService.deleteAsset(asset.id).subscribe({
+      next: () => {
+        this.toastService.success(`Asset "${asset.name}" deleted successfully.`);
+        this.loadAssets(this.currentPage);
+      },
+      error: (err) => this.toastService.error(err?.error?.message || 'Failed to delete asset.')
+    });
   }
 
   getStatusLabel(status: string): string {
@@ -202,8 +256,41 @@ export class AssetsComponent implements OnInit {
     };
   }
 
-  private showError(message: string): void {
-    this.errorMessage = message;
-    setTimeout(() => this.errorMessage = null, 5000);
+  exportToCsv(): void {
+    this.isExporting = true;
+    this.toastService.info('Preparing CSV export...');
+
+    this.assetService.exportAssetsCsv(
+      this.searchTerm,
+      this.selectedStatus,
+      this.selectedCategory
+    ).subscribe({
+      next: (blob) => {
+        this.isExporting = false;
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10);
+        const filename = `assets_export_${dateStr}.csv`;
+        this.downloadBlob(blob, filename);
+        this.toastService.success('Assets exported to CSV successfully');
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.isExporting = false;
+        console.error('Export error:', err);
+        this.toastService.error('Failed to export assets to CSV');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private downloadBlob(blob: Blob, filename: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => window.URL.revokeObjectURL(url), 100);
   }
 }

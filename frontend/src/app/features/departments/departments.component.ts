@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DepartmentService, DepartmentResponse } from '../../core/services/department.service';
 import { ToastService } from '../../core/services/toast.service';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-departments',
@@ -20,6 +21,8 @@ export class DepartmentsComponent implements OnInit {
   pageSize = 10;
   totalPages = 0;
   totalElements = 0;
+  isInitialLoading = true;
+  isLoading = false;
 
   // Filter state
   searchTerm = '';
@@ -33,7 +36,8 @@ export class DepartmentsComponent implements OnInit {
     private departmentService: DepartmentService,
     private toastService: ToastService,
     private fb: FormBuilder,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    public authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -49,17 +53,23 @@ export class DepartmentsComponent implements OnInit {
   }
 
   loadDepartments(page = this.currentPage): void {
+    this.isLoading = true;
     this.departmentService.getAllDepartments(page, this.pageSize, 'id', this.searchTerm).subscribe({
       next: (data) => {
         this.departments = data.content;
         this.totalPages = data.totalPages;
         this.totalElements = data.totalElements;
         this.currentPage = data.number;
+        this.isLoading = false;
+        this.isInitialLoading = false;
         this.cdr.detectChanges();
       },
       error: (err) => {
+        this.isLoading = false;
+        this.isInitialLoading = false;
         console.error('Departments load error:', err);
         this.toastService.error('Failed to load departments');
+        this.cdr.detectChanges();
       }
     });
   }

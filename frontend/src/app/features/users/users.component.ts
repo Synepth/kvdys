@@ -27,6 +27,8 @@ export class UsersComponent implements OnInit {
   pageSize = 10;
   totalPages = 0;
   totalElements = 0;
+  isInitialLoading = true;
+  isLoading = false;
 
   // Filter state
   searchTerm = '';
@@ -66,15 +68,24 @@ export class UsersComponent implements OnInit {
 
 
   loadUsers(page = this.currentPage): void {
+    this.isLoading = true;
     this.userService.getAllUsers(page, this.pageSize, 'id', this.searchTerm, this.selectedDepartmentId).subscribe({
       next: (data) => {
         this.users = data.content;
         this.totalPages = data.totalPages;
         this.totalElements = data.totalElements;
         this.currentPage = data.number;
+        this.isLoading = false;
+        this.isInitialLoading = false;
         this.cdr.detectChanges();
       },
-      error: (err) => console.error('Users load error:', err)
+      error: (err) => {
+        this.isLoading = false;
+        this.isInitialLoading = false;
+        console.error('Users load error:', err);
+        this.toastService.error('Failed to load users.');
+        this.cdr.detectChanges();
+      }
     });
   }
 

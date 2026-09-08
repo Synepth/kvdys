@@ -1,10 +1,13 @@
 package com.synepth.kvdys.service;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.nio.file.*;
 import java.util.Set;
 import java.util.UUID;
@@ -58,6 +61,68 @@ public class FileStorageService {
             Path filePath = Paths.get(uploadPath).resolve(filename);
             Files.deleteIfExists(filePath);
         } catch (IOException e) {
+        }
+    }
+
+    // ==================== TICKET ATTACHMENTS ====================
+
+    @Value("${upload.tickets.path:uploads/tickets}")
+    private String ticketUploadPath;
+
+    private static final long MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024;
+
+    public String storeTicketAttachment(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new RuntimeException("File is empty.");
+        }
+        if (file.getSize() > MAX_ATTACHMENT_SIZE) {
+            throw new RuntimeException("File size must be less than 10MB.");
+        }
+
+        try {
+            Path uploadDir = Paths.get(ticketUploadPath);
+            if (!Files.exists(uploadDir)) {
+                Files.createDirectories(uploadDir);
+            }
+
+            String originalFilename = file.getOriginalFilename();
+            String extension = "";
+            if (originalFilename != null && originalFilename.contains(".")) {
+                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            }
+            String filename = UUID.randomUUID().toString() + extension;
+
+            Path filePath = uploadDir.resolve(filename);
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+            return "/uploads/tickets/" + filename;
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to store attachment: " + e.getMessage());
+        }
+    }
+
+    public void deleteTicketAttachment(String attachmentUrl) {
+        if (attachmentUrl == null || attachmentUrl.isBlank()) return;
+        try {
+            String filename = attachmentUrl.substring(attachmentUrl.lastIndexOf("/") + 1);
+            Path filePath = Paths.get(ticketUploadPath).resolve(filename);
+            Files.deleteIfExists(filePath);
+        } catch (IOException e) {
+        }
+    }
+
+    public Resource loadTicketAttachmentAsResource(String attachmentUrl) {
+        try {
+            String filename = attachmentUrl.substring(attachmentUrl.lastIndexOf("/") + 1);
+            Path filePath = Paths.get(ticketUploadPath).resolve(filename).normalize();
+            Resource resource = new UrlResource(filePath.toUri());
+            if (resource.exists() && resource.isReadable()) {
+                return resource;
+            } else {
+                throw new RuntimeException("File not found or not readable: " + filename);
+            }
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("File path is invalid: " + e.getMessage());
         }
     }
 }
