@@ -26,8 +26,21 @@ public class JwtUtil {
 
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("roles", userDetails.getAuthorities().stream()
-                .map(a -> a.getAuthority()).toList());
+        java.util.List<String> roles = new java.util.ArrayList<>();
+        java.util.List<String> permissions = new java.util.ArrayList<>();
+
+        for (org.springframework.security.core.GrantedAuthority auth : userDetails.getAuthorities()) {
+            String authority = auth.getAuthority();
+            if (authority.startsWith("ROLE_")) {
+                roles.add(authority);
+            } else {
+                permissions.add(authority);
+            }
+        }
+
+        claims.put("roles", roles);
+        claims.put("permissions", permissions);
+
         return Jwts.builder()
                 .claims(claims)
                 .subject(userDetails.getUsername())

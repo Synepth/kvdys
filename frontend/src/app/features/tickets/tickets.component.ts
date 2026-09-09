@@ -103,7 +103,9 @@ export class TicketsComponent implements OnInit, OnDestroy {
     });
 
     // 2. Initial data load
-    this.loadUsers();
+    if (this.canManageTickets()) {
+      this.loadUsers();
+    }
     this.loadAssets();
 
     // 3. Deep-linking support (/tickets?id=123&tab=my)
@@ -719,6 +721,26 @@ export class TicketsComponent implements OnInit, OnDestroy {
       case 'Cancelled': return 'bg-secondary-subtle text-secondary border border-secondary-subtle';
       default: return 'bg-light text-dark';
     }
+  }
+
+  canViewAllTickets(): boolean {
+    return this.authService.isAdmin() || this.authService.hasPermission('TICKETS_VIEW_ALL');
+  }
+
+  canManageTickets(): boolean {
+    return this.authService.isAdmin() || this.authService.hasPermission('TICKETS_MANAGE');
+  }
+
+  canCreateTicket(): boolean {
+    return true;
+  }
+
+  canExport(): boolean {
+    return this.authService.isAdmin() || this.authService.hasPermission('REPORTS_EXPORT');
+  }
+
+  canEditTicket(ticket: TicketResponse): boolean {
+    return this.canManageTickets() || this.authService.username() === ticket.createdByUsername;
   }
 
   private getEmptyCreateRequest(): TicketCreateRequest {

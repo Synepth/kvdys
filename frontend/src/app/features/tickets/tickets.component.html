@@ -12,17 +12,21 @@
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
       <div>
-        <h4 class="fw-bold m-0">Support Requests</h4>
-        <small class="text-secondary">Manage incidents, requests, and support tickets in the system</small>
+        <h4 class="fw-bold m-0">{{ canViewAllTickets() ? 'Support Requests' : 'My Support Requests' }}</h4>
+        <small class="text-secondary">
+          {{ canViewAllTickets() ? 'Manage incidents, requests, and support tickets in the system' : 'Track and manage your submitted support tickets' }}
+        </small>
       </div>
       <div class="d-flex align-items-center gap-2">
-        <button class="btn btn-outline-success d-flex align-items-center gap-2"
-                [disabled]="isExporting"
-                (click)="exportToCsv()"
-                title="Export filtered support requests to CSV">
-          <i class="bi bi-file-earmark-spreadsheet"></i>
-          {{ isExporting ? 'Exporting...' : 'Export CSV' }}
-        </button>
+        @if (canExport()) {
+          <button class="btn btn-outline-success d-flex align-items-center gap-2"
+                  [disabled]="isExporting"
+                  (click)="exportToCsv()"
+                  title="Export filtered support requests to CSV">
+            <i class="bi bi-file-earmark-spreadsheet"></i>
+            {{ isExporting ? 'Exporting...' : 'Export CSV' }}
+          </button>
+        }
         <button class="btn btn-primary d-flex align-items-center gap-2"
                 data-bs-toggle="modal"
                 data-bs-target="#newTicketModal"
@@ -101,23 +105,25 @@
     </div>
   </div>
 
-  <ul class="nav nav-pills mb-3 border rounded p-1 bg-light-subtle w-fit-content" style="gap: 0.25rem;">
-    <li class="nav-item">
-      <button type="button" class="nav-link" [class.active]="activeTab === 'all'" (click)="setTab('all')">
-        All Requests
-      </button>
-    </li>
-    <li class="nav-item">
-      <button type="button" class="nav-link" [class.active]="activeTab === 'my'" (click)="setTab('my')">
-        Assigned to Me
-      </button>
-    </li>
-    <li class="nav-item">
-      <button type="button" class="nav-link" [class.active]="activeTab === 'unassigned'" (click)="setTab('unassigned')">
-        Unassigned
-      </button>
-    </li>
-  </ul>
+  @if (canViewAllTickets()) {
+    <ul class="nav nav-pills mb-3 border rounded p-1 bg-light-subtle w-fit-content" style="gap: 0.25rem;">
+      <li class="nav-item">
+        <button type="button" class="nav-link" [class.active]="activeTab === 'all'" (click)="setTab('all')">
+          All Requests
+        </button>
+      </li>
+      <li class="nav-item">
+        <button type="button" class="nav-link" [class.active]="activeTab === 'my'" (click)="setTab('my')">
+          Assigned to Me
+        </button>
+      </li>
+      <li class="nav-item">
+        <button type="button" class="nav-link" [class.active]="activeTab === 'unassigned'" (click)="setTab('unassigned')">
+          Unassigned
+        </button>
+      </li>
+    </ul>
+  }
 
   <!-- Tickets Table -->
   <div class="card border-0 shadow-sm">
@@ -173,12 +179,14 @@
                   } @else {
                     <div class="d-flex align-items-center gap-2">
                       <span class="text-muted fst-italic small">Unassigned</span>
-                      <button class="btn btn-outline-primary btn-sm py-0 px-2 d-inline-flex align-items-center gap-1"
-                              style="font-size: 0.75rem;"
-                              (click)="assignToMe(ticket)"
-                              title="Assign this support request to myself">
-                        <i class="bi bi-hand-index-thumb"></i> Take
-                      </button>
+                      @if (canManageTickets()) {
+                        <button class="btn btn-outline-primary btn-sm py-0 px-2 d-inline-flex align-items-center gap-1"
+                                style="font-size: 0.75rem;"
+                                (click)="assignToMe(ticket)"
+                                title="Assign this support request to myself">
+                          <i class="bi bi-hand-index-thumb"></i> Take
+                        </button>
+                      }
                     </div>
                   }
                 </td>
@@ -191,50 +199,56 @@
                   </span>
                 </td>
                 <td>
-                  <div class="dropdown">
-                    <button class="badge {{ getStatusBadgeClass(ticket.status) }} dropdown-toggle border-0 py-1 px-2 d-inline-flex align-items-center gap-1 shadow-none"
-                            type="button"
-                            data-bs-toggle="dropdown"
-                            aria-expanded="false"
-                            title="Click to quickly change status">
+                  @if (canManageTickets()) {
+                    <div class="dropdown">
+                      <button class="badge {{ getStatusBadgeClass(ticket.status) }} dropdown-toggle border-0 py-1 px-2 d-inline-flex align-items-center gap-1 shadow-none"
+                              type="button"
+                              data-bs-toggle="dropdown"
+                              aria-expanded="false"
+                              title="Click to quickly change status">
+                        {{ ticket.status }}
+                      </button>
+                      <ul class="dropdown-menu dropdown-menu-sm shadow-sm border-0 py-1" style="font-size: 0.85rem;">
+                        <li><h6 class="dropdown-header text-uppercase text-secondary fw-semibold py-1 px-3" style="font-size: 0.7rem;">Quick Change Status</h6></li>
+                        <li>
+                          <button class="dropdown-item d-flex align-items-center gap-2 py-1 px-3"
+                                  [class.active]="ticket.status === 'Open'"
+                                  (click)="updateTicketStatus(ticket, 'Open')">
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle p-1 rounded-circle"></span>
+                            Open
+                          </button>
+                        </li>
+                        <li>
+                          <button class="dropdown-item d-flex align-items-center gap-2 py-1 px-3"
+                                  [class.active]="ticket.status === 'In Review'"
+                                  (click)="updateTicketStatus(ticket, 'In Review')">
+                            <span class="badge bg-info-subtle text-info border border-info-subtle p-1 rounded-circle"></span>
+                            In Review
+                          </button>
+                        </li>
+                        <li>
+                          <button class="dropdown-item d-flex align-items-center gap-2 py-1 px-3"
+                                  [class.active]="ticket.status === 'Resolved'"
+                                  (click)="updateTicketStatus(ticket, 'Resolved')">
+                            <span class="badge bg-success-subtle text-success border border-success-subtle p-1 rounded-circle"></span>
+                            Resolved
+                          </button>
+                        </li>
+                        <li>
+                          <button class="dropdown-item d-flex align-items-center gap-2 py-1 px-3"
+                                  [class.active]="ticket.status === 'Cancelled'"
+                                  (click)="updateTicketStatus(ticket, 'Cancelled')">
+                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle p-1 rounded-circle"></span>
+                            Cancelled
+                          </button>
+                        </li>
+                      </ul>
+                    </div>
+                  } @else {
+                    <span class="badge {{ getStatusBadgeClass(ticket.status) }}">
                       {{ ticket.status }}
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-sm shadow-sm border-0 py-1" style="font-size: 0.85rem;">
-                      <li><h6 class="dropdown-header text-uppercase text-secondary fw-semibold py-1 px-3" style="font-size: 0.7rem;">Quick Change Status</h6></li>
-                      <li>
-                        <button class="dropdown-item d-flex align-items-center gap-2 py-1 px-3"
-                                [class.active]="ticket.status === 'Open'"
-                                (click)="updateTicketStatus(ticket, 'Open')">
-                          <span class="badge bg-primary-subtle text-primary border border-primary-subtle p-1 rounded-circle"></span>
-                          Open
-                        </button>
-                      </li>
-                      <li>
-                        <button class="dropdown-item d-flex align-items-center gap-2 py-1 px-3"
-                                [class.active]="ticket.status === 'In Review'"
-                                (click)="updateTicketStatus(ticket, 'In Review')">
-                          <span class="badge bg-info-subtle text-info border border-info-subtle p-1 rounded-circle"></span>
-                          In Review
-                        </button>
-                      </li>
-                      <li>
-                        <button class="dropdown-item d-flex align-items-center gap-2 py-1 px-3"
-                                [class.active]="ticket.status === 'Resolved'"
-                                (click)="updateTicketStatus(ticket, 'Resolved')">
-                          <span class="badge bg-success-subtle text-success border border-success-subtle p-1 rounded-circle"></span>
-                          Resolved
-                        </button>
-                      </li>
-                      <li>
-                        <button class="dropdown-item d-flex align-items-center gap-2 py-1 px-3"
-                                [class.active]="ticket.status === 'Cancelled'"
-                                (click)="updateTicketStatus(ticket, 'Cancelled')">
-                          <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle p-1 rounded-circle"></span>
-                          Cancelled
-                        </button>
-                      </li>
-                    </ul>
-                  </div>
+                    </span>
+                  }
                 </td>
                 <td class="text-center">
                   <div class="d-inline-flex gap-2">
@@ -255,13 +269,15 @@
                             title="Show Details, Comments & Attachments">
                       <i class="bi bi-eye"></i>
                     </button>
-                    <button class="btn btn-outline-primary"
-                            (click)="openEditModal(ticket)"
-                            data-bs-toggle="modal"
-                            data-bs-target="#editTicketModal"
-                            title="Edit Request">
-                      <i class="bi bi-pencil"></i>
-                    </button>
+                    @if (canEditTicket(ticket)) {
+                      <button class="btn btn-outline-primary"
+                              (click)="openEditModal(ticket)"
+                              data-bs-toggle="modal"
+                              data-bs-target="#editTicketModal"
+                              title="Edit Request">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                    }
                     @if (authService.isAdmin()) {
                       <button class="btn btn-outline-danger"
                               (click)="deleteTicket(ticket)"
@@ -357,15 +373,17 @@
             </div>
           </div>
 
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Assign Staff <span class="text-muted fw-normal">(optional)</span></label>
-            <select class="form-select" [(ngModel)]="newTicket.assignedUserId" name="assignedUserId">
-              <option [ngValue]="null">— Unassigned —</option>
-              @for (user of users; track user.id) {
-                <option [ngValue]="user.id">{{ user.firstName || user.lastName ? ((user.firstName || '') + ' ' + (user.lastName || '')).trim() : user.username }} ({{ user.username }})</option>
-              }
-            </select>
-          </div>
+          @if (canManageTickets()) {
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Assign Staff <span class="text-muted fw-normal">(optional)</span></label>
+              <select class="form-select" [(ngModel)]="newTicket.assignedUserId" name="assignedUserId">
+                <option [ngValue]="null">— Unassigned —</option>
+                @for (user of users; track user.id) {
+                  <option [ngValue]="user.id">{{ user.firstName || user.lastName ? ((user.firstName || '') + ' ' + (user.lastName || '')).trim() : user.username }} ({{ user.username }})</option>
+                }
+              </select>
+            </div>
+          }
 
           <div class="mb-3">
             <label class="form-label fw-semibold">Related Asset <span class="text-muted fw-normal">(optional)</span></label>
@@ -375,6 +393,11 @@
                 <option [ngValue]="asset.id">{{ asset.name }} ({{ asset.brand }} {{ asset.model }} • S/N: {{ asset.serialNumber }})</option>
               }
             </select>
+            @if (assets.length === 0) {
+              <div class="form-text text-muted">
+                <i class="bi bi-info-circle me-1"></i>No hardware currently assigned to your account.
+              </div>
+            }
           </div>
 
           <div class="mb-3">
@@ -495,7 +518,7 @@
                         <span class="text-muted small fw-normal">({{ selectedTicket.assignedUsername }})</span>
                       }
                     </span>
-                    @if (!selectedTicket.assignedUserId) {
+                    @if (!selectedTicket.assignedUserId && canManageTickets()) {
                       <button class="btn btn-outline-primary btn-sm py-0 px-2"
                               style="font-size: 0.75rem;"
                               (click)="assignToMe(selectedTicket)">
@@ -797,7 +820,7 @@
           <div class="row g-3 mb-3">
             <div class="col-md-6">
               <label class="form-label fw-semibold">Status</label>
-              <select class="form-select" [(ngModel)]="editTicketModel.status" name="editStatus">
+              <select class="form-select" [(ngModel)]="editTicketModel.status" name="editStatus" [disabled]="!canManageTickets()">
                 <option value="Open">Open</option>
                 <option value="In Review">In Review</option>
                 <option value="Resolved">Resolved</option>
@@ -827,7 +850,7 @@
             </div>
             <div class="col-md-6">
               <label class="form-label fw-semibold">Assign Staff</label>
-              <select class="form-select" [(ngModel)]="editTicketModel.assignedUserId" name="editAssignedUser">
+              <select class="form-select" [(ngModel)]="editTicketModel.assignedUserId" name="editAssignedUser" [disabled]="!canManageTickets()">
                 <option [ngValue]="null">— Unassigned —</option>
                 @for (user of users; track user.id) {
                   <option [ngValue]="user.id">{{ user.firstName || user.lastName ? ((user.firstName || '') + ' ' + (user.lastName || '')).trim() : user.username }} ({{ user.username }})</option>
@@ -844,6 +867,11 @@
                 <option [ngValue]="asset.id">{{ asset.name }} ({{ asset.brand }} {{ asset.model }} • S/N: {{ asset.serialNumber }})</option>
               }
             </select>
+            @if (assets.length === 0) {
+              <div class="form-text text-muted">
+                <i class="bi bi-info-circle me-1"></i>No hardware currently assigned to your account.
+              </div>
+            }
           </div>
 
           <div class="mb-3">

@@ -4,7 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin, Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { AssetCreateRequest, AssetResponse } from '../../models/asset';
+import { AssetCategoryRequest, AssetCategoryResponse } from '../../models/asset-category';
 import { AssetService } from '../../core/services/asset.service';
+import { AssetCategoryService } from '../../core/services/asset-category.service';
 import { UserService } from '../../core/services/user.service';
 import { UserResponse } from '../../models/user';
 import { DepartmentService, DepartmentResponse } from '../../core/services/department.service';
@@ -30,6 +32,13 @@ export class AssetsComponent implements OnInit, OnDestroy {
   isLoading = false;
   isExporting = false;
 
+  // Categories
+  categories: AssetCategoryResponse[] = [];
+  categoryForm: AssetCategoryRequest = { name: '', code: '', description: '' };
+  editingCategoryId: number | null = null;
+  isSavingCategory = false;
+  isLoadingCategories = false;
+
   // Dropdown data
   users: UserResponse[] = [];
   departments: DepartmentResponse[] = [];
@@ -50,6 +59,7 @@ export class AssetsComponent implements OnInit, OnDestroy {
 
   constructor(
     private assetService: AssetService,
+    private assetCategoryService: AssetCategoryService,
     private userService: UserService,
     private departmentService: DepartmentService,
     public authService: AuthService,
@@ -70,7 +80,10 @@ export class AssetsComponent implements OnInit, OnDestroy {
 
     // 2. Initial load
     this.loadAssets();
-    this.loadDropdownData();
+    this.loadCategories();
+    if (this.canManageAssets()) {
+      this.loadDropdownData();
+    }
   }
 
   ngOnDestroy(): void {
@@ -221,13 +234,117 @@ export class AssetsComponent implements OnInit, OnDestroy {
   }
 
   getTypeLabel(type: string): string {
-    const labels: Record<string, string> = {
+    const found = this.categories.find(c => c.code === type);
+    if (found) return found.name;
+    const fallback: Record<string, string> = {
       'LAPTOP': 'Laptop',
       'MONITOR': 'Monitor',
       'KEYBOARD': 'Keyboard',
       'OTHER': 'Other'
     };
-    return labels[type] ?? type;
+    return fallback[type] ?? type;
+  }
+
+  loadCategories(): void {
+    this.isLoadingCategories = true;
+    this.assetCategoryService.getAllCategories().subscribe({
+      next: (cats) => {
+        this.categories = cats;
+        this.isLoadingCategories = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.isLoadingCategories = false;
+        this.toastService.error('Failed to load asset categories.');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  canManageCategories(): boolean {
+    return this.authService.isAdmin() || this.authService.hasPermission('CATEGORIES_MANAGE');
+  }
+
+  openCategoryModal(): void {
+    this.resetCategoryForm();
+    this.loadCategories();
+  }
+
+  resetCategoryForm(): void {
+    this.editingCategoryId = null;
+    this.categoryForm = { name: '', code: '', description: '' };
+  }
+
+  startEditCategory(cat: AssetCategoryResponse): void {
+    this.editingCategoryId = cat.id;
+    this.categoryForm = {
+      name: cat.name,
+      code: cat.code,
+      description: cat.description || ''
+    };
+  }
+
+  saveCategory(): void {
+    if (!this.categoryForm.name?.trim()) {
+      this.toastService.warning('Category name is required.');
+      return;
+    }
+
+    this.isSavingCategory = true;
+    if (this.editingCategoryId) {
+      this.assetCategoryService.updateCategory(this.editingCategoryId, this.categoryForm).subscribe({
+        next: () => {
+          this.isSavingCategory = false;
+          this.toastService.success('Asset category updated successfully.');
+          this.resetCategoryForm();
+          this.loadCategories();
+          this.loadAssets(this.currentPage);
+        },
+        error: (err) => {
+          this.isSavingCategory = false;
+          this.toastService.error(err?.error?.message || 'Failed to update asset category.');
+          this.cdr.detectChanges();
+        }
+      });
+    } else {
+      this.assetCategoryService.createCategory(this.categoryForm).subscribe({
+        next: () => {
+          this.isSavingCategory = false;
+          this.toastService.success('Asset category created successfully.');
+          this.resetCategoryForm();
+          this.loadCategories();
+        },
+        error: (err) => {
+          this.isSavingCategory = false;
+          this.toastService.error(err?.error?.message || 'Failed to create asset category.');
+          this.cdr.detectChanges();
+        }
+      });
+    }
+  }
+
+  deleteCategory(cat: AssetCategoryResponse): void {
+    if (cat.assetCount > 0) {
+      this.toastService.warning(`Cannot delete "${cat.name}" because it is currently assigned to ${cat.assetCount} asset(s).`);
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete category "${cat.name}"?`)) {
+      return;
+    }
+
+    this.assetCategoryService.deleteCategory(cat.id).subscribe({
+      next: () => {
+        this.toastService.success(`Category "${cat.name}" deleted successfully.`);
+        if (this.editingCategoryId === cat.id) {
+          this.resetCategoryForm();
+        }
+        this.loadCategories();
+      },
+      error: (err) => {
+        this.toastService.error(err?.error?.message || 'Failed to delete asset category.');
+      }
+    });
   }
 
   getStatusBadgeClass(status: string): string {
@@ -241,6 +358,22 @@ export class AssetsComponent implements OnInit, OnDestroy {
       default:
         return 'bg-light text-dark';
     }
+  }
+
+  canViewAllAssets(): boolean {
+    return this.authService.isAdmin() || this.authService.hasPermission('ASSETS_VIEW_ALL');
+  }
+
+  canManageAssets(): boolean {
+    return this.authService.isAdmin() || this.authService.hasPermission('ASSETS_MANAGE');
+  }
+
+  canDeleteAssets(): boolean {
+    return this.authService.isAdmin() || this.authService.hasPermission('ASSETS_DELETE');
+  }
+
+  canExport(): boolean {
+    return this.authService.isAdmin() || this.authService.hasPermission('REPORTS_EXPORT');
   }
 
   private getEmptyAssetRequest(): AssetCreateRequest {

@@ -1,17 +1,16 @@
 package com.synepth.kvdys.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class RoleResponse {
+public class AssetCategoryResponse {
     private Long id;
     private String name;
+    private String code;
     private String description;
-    private long userCount;
-    private java.util.Set<String> permissions = new java.util.HashSet<>();
-
+    private long assetCount;
 }

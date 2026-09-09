@@ -10,4 +10,5 @@ export interface LoginResponse {
   userId: number;
   avatarUrl?: string | null;
   roles?: string[];
+  permissions?: string[];
 }
