@@ -35,16 +35,16 @@ public class RoleService {
 
     private RoleResponse mapToResponse(Role role) {
         long userCount = userRepository.countByRolesId(role.getId());
-        return new RoleResponse(
-                role.getId(),
-                role.getName(),
-                role.getDescription(),
-                userCount
-        );
-
-
+        RoleResponse res = new RoleResponse();
+        res.setId(role.getId());
+        res.setName(role.getName());
+        res.setDescription(role.getDescription());
+        res.setUserCount(userCount);
+        res.setPermissions(role.getPermissions() != null ? new java.util.HashSet<>(role.getPermissions()) : new java.util.HashSet<>());
+        return res;
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public RoleResponse createRole(RoleCreateRequest request) {
         if (roleRepository.findByName(request.getName()).isPresent()) {
             throw new RuntimeException("A role with this name already exists.");
@@ -52,10 +52,14 @@ public class RoleService {
         Role role = new Role();
         role.setName(request.getName());
         role.setDescription(request.getDescription());
+        if (request.getPermissions() != null) {
+            role.setPermissions(new java.util.HashSet<>(request.getPermissions()));
+        }
         Role saved = roleRepository.save(role);
         return mapToResponse(saved);
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public RoleResponse updateRole(Long id, RoleCreateRequest request) {
         Role role = roleRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Role not found with id: " + id));
@@ -68,6 +72,11 @@ public class RoleService {
 
         role.setName(request.getName());
         role.setDescription(request.getDescription());
+        if ("ROLE_ADMIN".equalsIgnoreCase(role.getName())) {
+            role.setPermissions(new java.util.HashSet<>(com.synepth.kvdys.entity.Permission.ALL));
+        } else if (request.getPermissions() != null) {
+            role.setPermissions(new java.util.HashSet<>(request.getPermissions()));
+        }
         Role saved = roleRepository.save(role);
         return mapToResponse(saved);
     }

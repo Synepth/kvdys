@@ -30,8 +30,33 @@ export class AuthService {
     const token = user.token || this.getToken();
     return this.getRolesFromToken(token);
   });
+  readonly permissions = computed(() => {
+    const user = this.currentUser();
+    if (!user) return [];
+    if (user.permissions && Array.isArray(user.permissions) && user.permissions.length > 0) {
+      return user.permissions;
+    }
+    const token = user.token || this.getToken();
+    return this.getPermissionsFromToken(token);
+  });
   readonly isAdmin = computed(() => this.hasRole('ROLE_ADMIN'));
   readonly userId = computed(() => this.currentUser()?.userId ?? null);
+
+  constructor() {
+    if (this.getToken()) {
+      this.refreshCurrentUser().subscribe({
+        error: () => {}
+      });
+    }
+  }
+
+  refreshCurrentUser(): Observable<LoginResponse> {
+    return this.http.get<LoginResponse>(`${this.API_URL}/me`).pipe(
+      tap((response) => {
+        this.saveAuthData(response);
+      })
+    );
+  }
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.API_URL}/login`, credentials).pipe(
@@ -62,6 +87,17 @@ export class AuthService {
     return currentRoles.includes(role) ||
            currentRoles.includes(`ROLE_${cleanRole}`) ||
            currentRoles.includes(cleanRole);
+  }
+
+  hasPermission(permission: string): boolean {
+    if (this.isAdmin()) return true;
+    return this.permissions().includes(permission);
+  }
+
+  hasAnyPermission(...permissions: string[]): boolean {
+    if (this.isAdmin()) return true;
+    const current = this.permissions();
+    return permissions.some(p => current.includes(p));
   }
 
   updateStoredEmail(email: string): void {
@@ -112,10 +148,18 @@ export class AuthService {
     return payload?.roles ?? [];
   }
 
+  private getPermissionsFromToken(token: string | null): string[] {
+    const payload = this.decodeJwtPayload(token);
+    return payload?.permissions ?? [];
+  }
+
   private saveAuthData(data: LoginResponse): void {
     try {
       if (!data.roles || data.roles.length === 0) {
         data.roles = this.getRolesFromToken(data.token);
+      }
+      if (!data.permissions || data.permissions.length === 0) {
+        data.permissions = this.getPermissionsFromToken(data.token);
       }
       localStorage.setItem(TOKEN_KEY, data.token);
       localStorage.setItem(USER_KEY, JSON.stringify(data));
@@ -141,6 +185,9 @@ export class AuthService {
       const user = JSON.parse(stored) as LoginResponse;
       if (!user.roles || user.roles.length === 0) {
         user.roles = this.getRolesFromToken(token);
+      }
+      if (!user.permissions || user.permissions.length === 0) {
+        user.permissions = this.getPermissionsFromToken(token);
       }
       return user;
     } catch {

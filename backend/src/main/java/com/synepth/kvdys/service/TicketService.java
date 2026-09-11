@@ -33,10 +33,50 @@ public class TicketService {
     private final AssetRepository assetRepository;
     private final FileStorageService fileStorageService;
 
+    private Long resolveScopedUserId() {
+        org.springframework.security.core.Authentication auth =
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) {
+            return null;
+        }
+        boolean canViewAll = auth.getAuthorities().stream().anyMatch(a ->
+                "TICKETS_VIEW_ALL".equals(a.getAuthority()) ||
+                "ROLE_ADMIN".equals(a.getAuthority())
+        );
+        if (canViewAll) {
+            return null; // Unrestricted: staff and admins view all company tickets
+        }
+        User user = userRepository.findByUsername(auth.getName()).orElse(null);
+        return user != null ? user.getId() : -1L; // Restricted: normal users only view their created or assigned tickets
+    }
+
+    private void checkTicketAccess(Ticket ticket) {
+        org.springframework.security.core.Authentication auth =
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) return;
+        boolean canViewAll = auth.getAuthorities().stream().anyMatch(a ->
+                "TICKETS_VIEW_ALL".equals(a.getAuthority()) || "ROLE_ADMIN".equals(a.getAuthority())
+        );
+        if (canViewAll) return;
+
+        User currentUser = userRepository.findByUsername(auth.getName()).orElse(null);
+        if (currentUser == null) {
+            throw new RuntimeException("User not authenticated.");
+        }
+
+        boolean isCreator = ticket.getCreatedBy() != null && ticket.getCreatedBy().getId().equals(currentUser.getId());
+        boolean isAssignee = ticket.getAssignedUser() != null && ticket.getAssignedUser().getId().equals(currentUser.getId());
+
+        if (!isCreator && !isAssignee) {
+            throw new RuntimeException("You do not have permission to view this support request.");
+        }
+    }
+
     @Transactional(readOnly = true)
     public Page<TicketResponse> getAllTickets(String search, String status, String category, String priority,
                                             Long assignedUserId, Boolean unassigned, Pageable pageable) {
-        return ticketRepository.findByFilters(search, status, category, priority, assignedUserId, unassigned, pageable)
+        Long scopedUserId = resolveScopedUserId();
+        return ticketRepository.findByFilters(search, status, category, priority, assignedUserId, unassigned, scopedUserId, pageable)
                 .map(this::mapToResponse);
     }
 
@@ -44,6 +84,7 @@ public class TicketService {
     public TicketResponse getTicketById(Long id) {
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Support request not found with ID: " + id));
+        checkTicketAccess(ticket);
         return mapToResponse(ticket);
     }
 
@@ -302,9 +343,9 @@ public class TicketService {
 
     @Transactional(readOnly = true)
     public List<CommentResponse> getCommentsByTicketId(Long ticketId) {
-        if (!ticketRepository.existsById(ticketId)) {
-            throw new RuntimeException("Support request not found with ID: " + ticketId);
-        }
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new RuntimeException("Support request not found with ID: " + ticketId));
+        checkTicketAccess(ticket);
         return commentRepository.findByTicketIdOrderByCreatedAtAsc(ticketId)
                 .stream()
                 .map(this::mapToCommentResponse)
@@ -315,6 +356,7 @@ public class TicketService {
     public CommentResponse addComment(Long ticketId, CommentCreateRequest request, String currentUsername) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new RuntimeException("Support request not found with ID: " + ticketId));
+        checkTicketAccess(ticket);
 
         User author = userRepository.findByUsername(currentUsername)
                 .orElseThrow(() -> new RuntimeException("Current user not found: " + currentUsername));
@@ -415,9 +457,9 @@ public class TicketService {
 
     @Transactional(readOnly = true)
     public List<AttachmentResponse> getAttachmentsByTicketId(Long ticketId) {
-        if (!ticketRepository.existsById(ticketId)) {
-            throw new RuntimeException("Support request not found with ID: " + ticketId);
-        }
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new RuntimeException("Support request not found with ID: " + ticketId));
+        checkTicketAccess(ticket);
         return attachmentRepository.findByTicketId(ticketId)
                 .stream()
                 .map(this::mapToAttachmentResponse)
@@ -428,6 +470,7 @@ public class TicketService {
     public AttachmentResponse uploadAttachment(Long ticketId, MultipartFile file, String currentUsername) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new RuntimeException("Support request not found with ID: " + ticketId));
+        checkTicketAccess(ticket);
 
         User currentUser = userRepository.findByUsername(currentUsername)
                 .orElseThrow(() -> new RuntimeException("Current user not found: " + currentUsername));
@@ -510,6 +553,7 @@ public class TicketService {
         if (!attachment.getTicket().getId().equals(ticketId)) {
             throw new RuntimeException("Attachment does not belong to this support request.");
         }
+        checkTicketAccess(attachment.getTicket());
         return attachment;
     }
 
@@ -520,8 +564,9 @@ public class TicketService {
     @Transactional(readOnly = true)
     public byte[] exportTicketsToCsv(String search, String status, String category, String priority,
                                      Long assignedUserId, Boolean unassigned) {
+        Long scopedUserId = resolveScopedUserId();
         Pageable unpaged = PageRequest.of(0, 10000, Sort.by("id").descending());
-        List<Ticket> tickets = ticketRepository.findByFilters(search, status, category, priority, assignedUserId, unassigned, unpaged).getContent();
+        List<Ticket> tickets = ticketRepository.findByFilters(search, status, category, priority, assignedUserId, unassigned, scopedUserId, unpaged).getContent();
 
         StringBuilder sb = new StringBuilder();
         sb.append(CsvExportUtil.UTF_8_BOM);
@@ -564,9 +609,9 @@ public class TicketService {
 
     @Transactional(readOnly = true)
     public List<TicketActivityResponse> getActivitiesByTicketId(Long ticketId) {
-        if (!ticketRepository.existsById(ticketId)) {
-            throw new RuntimeException("Support request not found with ID: " + ticketId);
-        }
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new RuntimeException("Support request not found with ID: " + ticketId));
+        checkTicketAccess(ticket);
         return ticketActivityRepository.findByTicketIdOrderByCreatedAtDesc(ticketId)
                 .stream()
                 .map(this::mapToActivityResponse)

@@ -27,4 +27,12 @@ public class Role {
     @Size(max = 255, message = "Description can be at most 255 characters")
     private String description;
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "role_permissions",
+            joinColumns = @JoinColumn(name = "role_id")
+    )
+    @Column(name = "permission")
+    private java.util.Set<String> permissions = new java.util.HashSet<>();
+
 }

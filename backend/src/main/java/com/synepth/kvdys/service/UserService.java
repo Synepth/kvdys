@@ -95,11 +95,16 @@ public class UserService {
         return mapToResponse(updatedUser);
     }
 
+    @Transactional
     public void deleteUser(Long id) {
-        if (!userRepository.existsById(id)) {
-            throw new RuntimeException("User not found with id: " + id);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+
+        if ("admin".equalsIgnoreCase(user.getUsername())) {
+            throw new RuntimeException("The primary administrator account cannot be deleted.");
         }
-        userRepository.deleteById(id);
+
+        userRepository.delete(user);
     }
 
     @Transactional

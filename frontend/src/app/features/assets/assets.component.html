@@ -12,23 +12,38 @@
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
       <div>
-        <h4 class="fw-bold m-0 text-dark">Asset Management</h4>
-        <small class="text-secondary">Manage corporate assets, device assignments, and operational statuses</small>
+        <h4 class="fw-bold m-0 text-dark">{{ canViewAllAssets() ? 'Asset Management' : 'My Assets' }}</h4>
+        <small class="text-secondary">
+          {{ canViewAllAssets() ? 'Manage corporate assets, device assignments, and operational statuses' : 'View your assigned corporate hardware and equipment' }}
+        </small>
       </div>
       <div class="d-flex align-items-center gap-2">
-        <button class="btn btn-outline-success d-flex align-items-center gap-2"
-                [disabled]="isExporting"
-                (click)="exportToCsv()"
-                title="Export filtered assets to CSV">
-          <i class="bi bi-file-earmark-spreadsheet"></i>
-          {{ isExporting ? 'Exporting...' : 'Export CSV' }}
-        </button>
-        <button class="btn btn-primary d-flex align-items-center gap-2"
-                data-bs-toggle="modal"
-                data-bs-target="#createAssetModal"
-                (click)="openCreateModal()">
-          <i class="bi bi-plus-lg"></i> Add New Asset
-        </button>
+        @if (canExport()) {
+          <button class="btn btn-outline-success d-flex align-items-center gap-2"
+                  [disabled]="isExporting"
+                  (click)="exportToCsv()"
+                  title="Export filtered assets to CSV">
+            <i class="bi bi-file-earmark-spreadsheet"></i>
+            {{ isExporting ? 'Exporting...' : 'Export CSV' }}
+          </button>
+        }
+        @if (canManageCategories()) {
+          <button class="btn btn-outline-primary d-flex align-items-center gap-2"
+                  data-bs-toggle="modal"
+                  data-bs-target="#categoryManagementModal"
+                  (click)="openCategoryModal()"
+                  title="Manage Asset Categories">
+            <i class="bi bi-tags"></i> Categories
+          </button>
+        }
+        @if (canManageAssets()) {
+          <button class="btn btn-primary d-flex align-items-center gap-2"
+                  data-bs-toggle="modal"
+                  data-bs-target="#createAssetModal"
+                  (click)="openCreateModal()">
+            <i class="bi bi-plus-lg"></i> Add New Asset
+          </button>
+        }
       </div>
     </div>
 
@@ -60,10 +75,9 @@
         <div class="col-md-3">
           <select class="form-select" [(ngModel)]="selectedCategory" (change)="onFilterChange()">
             <option value="">All Categories / Types</option>
-            <option value="LAPTOP">Laptop</option>
-            <option value="MONITOR">Monitor</option>
-            <option value="KEYBOARD">Keyboard</option>
-            <option value="OTHER">Other</option>
+            @for (cat of categories; track cat.id) {
+              <option [value]="cat.code">{{ cat.name }}</option>
+            }
           </select>
         </div>
 
@@ -267,10 +281,9 @@
               <label class="form-label fw-semibold">Category / Type <span class="text-danger">*</span></label>
               <select class="form-select" [(ngModel)]="newAsset.type" name="type" required>
                 <option value="" disabled>— Please Select —</option>
-                <option value="LAPTOP">Laptop</option>
-                <option value="MONITOR">Monitor</option>
-                <option value="KEYBOARD">Keyboard</option>
-                <option value="OTHER">Other</option>
+                @for (cat of categories; track cat.id) {
+                  <option [value]="cat.code">{{ cat.name }}</option>
+                }
               </select>
             </div>
           </div>
@@ -442,10 +455,9 @@
             <div class="col-md-6">
               <label class="form-label fw-semibold">Category / Type <span class="text-danger">*</span></label>
               <select class="form-select" [(ngModel)]="editAssetModel.type" name="editType" required>
-                <option value="LAPTOP">Laptop</option>
-                <option value="MONITOR">Monitor</option>
-                <option value="KEYBOARD">Keyboard</option>
-                <option value="OTHER">Other</option>
+                @for (cat of categories; track cat.id) {
+                  <option [value]="cat.code">{{ cat.name }}</option>
+                }
               </select>
             </div>
           </div>
@@ -490,6 +502,148 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL 4: CATEGORY MANAGEMENT ==================== -->
+<div class="modal fade" id="categoryManagementModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-bottom">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-tags text-primary fs-5"></i>
+          <h5 class="modal-title fw-bold m-0">Asset Categories</h5>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body p-4">
+        <!-- Add / Edit Category Form Card -->
+        <div class="card border border-light-subtle bg-light mb-4">
+          <div class="card-body">
+            <h6 class="fw-bold mb-3 text-dark d-flex align-items-center gap-2">
+              <i class="bi {{ editingCategoryId ? 'bi-pencil-square text-warning' : 'bi-plus-circle text-primary' }}"></i>
+              {{ editingCategoryId ? 'Edit Category' : 'Add New Category' }}
+            </h6>
+            <form (ngSubmit)="saveCategory()">
+              <div class="row g-3">
+                <div class="col-md-5">
+                  <label class="form-label small fw-semibold">Category Name <span class="text-danger">*</span></label>
+                  <input type="text"
+                         class="form-control form-control-sm"
+                         placeholder="e.g. Tablet, Printer"
+                         [(ngModel)]="categoryForm.name"
+                         name="categoryName"
+                         required>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold">Code <span class="text-muted fw-normal">(optional)</span></label>
+                  <input type="text"
+                         class="form-control form-control-sm font-monospace text-uppercase"
+                         placeholder="e.g. TABLET"
+                         [(ngModel)]="categoryForm.code"
+                         name="categoryCode">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small fw-semibold">Description <span class="text-muted fw-normal">(optional)</span></label>
+                  <input type="text"
+                         class="form-control form-control-sm"
+                         placeholder="Short description"
+                         [(ngModel)]="categoryForm.description"
+                         name="categoryDescription">
+                </div>
+              </div>
+              <div class="d-flex justify-content-end gap-2 mt-3">
+                @if (editingCategoryId) {
+                  <button type="button" class="btn btn-secondary btn-sm" (click)="resetCategoryForm()">
+                    Cancel
+                  </button>
+                }
+                <button type="submit"
+                        class="btn btn-primary btn-sm d-flex align-items-center gap-1"
+                        [disabled]="!categoryForm.name.trim() || isSavingCategory">
+                  @if (isSavingCategory) {
+                    <span class="spinner-border spinner-border-sm" role="status"></span>
+                  } @else {
+                    <i class="bi {{ editingCategoryId ? 'bi-check-lg' : 'bi-plus-lg' }}"></i>
+                  }
+                  {{ editingCategoryId ? 'Update Category' : 'Save Category' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Categories List -->
+        <h6 class="fw-bold mb-2 text-dark">Existing Categories</h6>
+        <div class="table-responsive border rounded">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-3 py-2 text-secondary small fw-semibold">Category Name</th>
+                <th class="py-2 text-secondary small fw-semibold">Code</th>
+                <th class="py-2 text-secondary small fw-semibold">Description</th>
+                <th class="py-2 text-secondary small fw-semibold text-center">Assigned Assets</th>
+                <th class="pe-3 py-2 text-secondary small fw-semibold text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (isLoadingCategories) {
+                <tr>
+                  <td colspan="5" class="text-center py-4 text-muted">
+                    <span class="spinner-border spinner-border-sm me-2"></span> Loading categories...
+                  </td>
+                </tr>
+              } @else {
+                @for (cat of categories; track cat.id) {
+                  <tr [class.table-active]="editingCategoryId === cat.id">
+                    <td class="ps-3 fw-semibold text-dark">{{ cat.name }}</td>
+                    <td>
+                      <span class="badge bg-secondary-subtle text-secondary font-monospace border border-secondary-subtle">
+                        {{ cat.code }}
+                      </span>
+                    </td>
+                    <td class="text-muted small">{{ cat.description || '—' }}</td>
+                    <td class="text-center">
+                      <span class="badge {{ cat.assetCount > 0 ? 'bg-primary-subtle text-primary border border-primary-subtle' : 'bg-light text-muted border' }}">
+                        {{ cat.assetCount }} {{ cat.assetCount === 1 ? 'asset' : 'assets' }}
+                      </span>
+                    </td>
+                    <td class="pe-3 text-end">
+                      <div class="btn-group btn-group-sm">
+                        <button type="button"
+                                class="btn btn-outline-secondary"
+                                (click)="startEditCategory(cat)"
+                                title="Edit category">
+                          <i class="bi bi-pencil"></i>
+                        </button>
+                        <button type="button"
+                                class="btn btn-outline-danger"
+                                [disabled]="cat.assetCount > 0"
+                                [title]="cat.assetCount > 0 ? 'Cannot delete category with assigned assets' : 'Delete category'"
+                                (click)="deleteCategory(cat)">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="5" class="text-center py-4 text-muted">
+                      No categories found.
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer bg-light py-2">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>

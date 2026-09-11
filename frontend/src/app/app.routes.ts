@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard, noAuthGuard } from './core/guards/auth.guard';
 import { adminGuard } from './core/guards/admin.guard';
+import { permissionGuard } from './core/guards/permission.guard';
 
 export const routes: Routes = [
   {
@@ -42,6 +43,7 @@ export const routes: Routes = [
           import('./features/users/users.component').then(
             (m) => m.UsersComponent
           ),
+        canActivate: [permissionGuard('USERS_MANAGE')]
       },
       {
         path: 'departments',
@@ -49,6 +51,7 @@ export const routes: Routes = [
           import('./features/departments/departments.component').then(
             (m) => m.DepartmentsComponent
           ),
+        canActivate: [permissionGuard('DEPARTMENTS_MANAGE')]
       },
       {
         path: 'roles',
@@ -56,6 +59,7 @@ export const routes: Routes = [
           import('./features/roles/roles.component').then(
             (m) => m.RolesComponent
           ),
+        canActivate: [permissionGuard('ROLES_MANAGE')]
       },
       {
         path: 'profile',

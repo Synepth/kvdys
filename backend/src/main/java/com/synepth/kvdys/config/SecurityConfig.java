@@ -43,7 +43,7 @@ public class SecurityConfig {
                         // Public endpoints
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/health").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/v3/api-docs").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
                         // Profile & self endpoints - allow any authenticated user
                         .requestMatchers("/api/v1/users/me/**").authenticated()
@@ -53,14 +53,29 @@ public class SecurityConfig {
                         // Ticket comment & attachment - author/uploader or admin handled in service
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/tickets/*/comments/*").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/tickets/*/attachments/*").authenticated()
-                        // Admin only mutations (Users, Departments, Roles, Global Deletes)
+                        // Administrative mutations protected by permissions or ROLE_ADMIN
+                        .requestMatchers(HttpMethod.POST, "/api/v1/users", "/api/v1/users/**").hasAnyAuthority("USERS_MANAGE", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/users/**").hasAnyAuthority("USERS_MANAGE", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/users/**").hasAnyAuthority("USERS_MANAGE", "ROLE_ADMIN")
+
+                        .requestMatchers(HttpMethod.POST, "/api/v1/departments", "/api/v1/departments/**").hasAnyAuthority("DEPARTMENTS_MANAGE", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/departments/**").hasAnyAuthority("DEPARTMENTS_MANAGE", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/departments/**").hasAnyAuthority("DEPARTMENTS_MANAGE", "ROLE_ADMIN")
+
+                        .requestMatchers(HttpMethod.POST, "/api/v1/roles", "/api/v1/roles/**").hasAnyAuthority("ROLES_MANAGE", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/roles/**").hasAnyAuthority("ROLES_MANAGE", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/roles/**").hasAnyAuthority("ROLES_MANAGE", "ROLE_ADMIN")
+
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/assets/**").hasAnyAuthority("ASSETS_DELETE", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/assets/**").hasAnyAuthority("ASSETS_MANAGE", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/assets/**").hasAnyAuthority("ASSETS_MANAGE", "ROLE_ADMIN")
+
+                        .requestMatchers(HttpMethod.POST, "/api/v1/asset-categories", "/api/v1/asset-categories/**").hasAnyAuthority("CATEGORIES_MANAGE", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/asset-categories/**").hasAnyAuthority("CATEGORIES_MANAGE", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/asset-categories/**").hasAnyAuthority("CATEGORIES_MANAGE", "ROLE_ADMIN")
+
+                        // Global fallback delete guard
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/v1/users", "/api/v1/users/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/users/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/v1/departments", "/api/v1/departments/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/departments/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/v1/roles", "/api/v1/roles/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/roles/**").hasRole("ADMIN")
                         // Authenticated users (can view/read all resources)
                         .anyRequest().authenticated()
                 )

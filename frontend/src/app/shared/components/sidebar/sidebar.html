@@ -19,7 +19,7 @@
 
   <!-- Nav Items -->
   <ul class="nav nav-pills flex-column gap-1 mb-0">
-    @for (item of navItems; track item.route) {
+    @for (item of navItems(); track item.route) {
       <li class="nav-item">
         <a class="nav-link d-flex align-items-center p-0"
            [routerLink]="item.route"

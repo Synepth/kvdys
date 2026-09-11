@@ -27,9 +27,27 @@ public class AssetService {
         this.userRepository = userRepository;
     }
 
+    private Long resolveScopedUserId() {
+        org.springframework.security.core.Authentication auth =
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) {
+            return null;
+        }
+        boolean canViewAll = auth.getAuthorities().stream().anyMatch(a ->
+                "ASSETS_VIEW_ALL".equals(a.getAuthority()) ||
+                "ROLE_ADMIN".equals(a.getAuthority())
+        );
+        if (canViewAll) {
+            return null; // Unrestricted: staff and admins view all corporate assets
+        }
+        User user = userRepository.findByUsername(auth.getName()).orElse(null);
+        return user != null ? user.getId() : -1L; // Restricted: normal users only view their assigned hardware
+    }
+
     @Transactional(readOnly = true)
     public Page<AssetResponse> getAllAssets(String search, String status, String category, Pageable pageable) {
-        return assetRepository.findByFilters(search, status, category, pageable)
+        Long scopedUserId = resolveScopedUserId();
+        return assetRepository.findByFilters(search, status, category, scopedUserId, pageable)
                 .map(this::mapToResponse);
     }
 
@@ -97,7 +115,9 @@ public class AssetService {
 
     @Transactional(readOnly = true)
     public List<AssetResponse> getRecentAssets(int limit) {
-        return assetRepository.findTop5ByOrderByIdDesc()
+        Long scopedUserId = resolveScopedUserId();
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(0, limit);
+        return assetRepository.findRecentAssetsByScopedUser(scopedUserId, pageable)
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
@@ -121,8 +141,9 @@ public class AssetService {
 
     @Transactional(readOnly = true)
     public byte[] exportAssetsToCsv(String search, String status, String category) {
+        Long scopedUserId = resolveScopedUserId();
         org.springframework.data.domain.Pageable unpaged = org.springframework.data.domain.PageRequest.of(0, 10000, org.springframework.data.domain.Sort.by("id").ascending());
-        List<Asset> assets = assetRepository.findByFilters(search, status, category, unpaged).getContent();
+        List<Asset> assets = assetRepository.findByFilters(search, status, category, scopedUserId, unpaged).getContent();
 
         StringBuilder sb = new StringBuilder();
         sb.append(com.synepth.kvdys.util.CsvExportUtil.UTF_8_BOM);
