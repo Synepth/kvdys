@@ -1,0 +1,650 @@
+@if (isInitialLoading) {
+  <div class="container-fluid">
+    <div class="row g-3 my-3">
+      <div class="col-12 text-center text-muted py-5">
+        <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+        Loading corporate assets...
+      </div>
+    </div>
+  </div>
+} @else {
+  <div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h4 class="fw-bold m-0 text-dark">{{ canViewAllAssets() ? 'Asset Management' : 'My Assets' }}</h4>
+        <small class="text-secondary">
+          {{ canViewAllAssets() ? 'Manage corporate assets, device assignments, and operational statuses' : 'View your assigned corporate hardware and equipment' }}
+        </small>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        @if (canExport()) {
+          <button class="btn btn-outline-success d-flex align-items-center gap-2"
+                  [disabled]="isExporting"
+                  (click)="exportToCsv()"
+                  title="Export filtered assets to CSV">
+            <i class="bi bi-file-earmark-spreadsheet"></i>
+            {{ isExporting ? 'Exporting...' : 'Export CSV' }}
+          </button>
+        }
+        @if (canManageCategories()) {
+          <button class="btn btn-outline-primary d-flex align-items-center gap-2"
+                  data-bs-toggle="modal"
+                  data-bs-target="#categoryManagementModal"
+                  (click)="openCategoryModal()"
+                  title="Manage Asset Categories">
+            <i class="bi bi-tags"></i> Categories
+          </button>
+        }
+        @if (canManageAssets()) {
+          <button class="btn btn-primary d-flex align-items-center gap-2"
+                  data-bs-toggle="modal"
+                  data-bs-target="#createAssetModal"
+                  (click)="openCreateModal()">
+            <i class="bi bi-plus-lg"></i> Add New Asset
+          </button>
+        }
+      </div>
+    </div>
+
+  <!-- Filter Panel -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <div class="row g-3">
+        <!-- Search Input (Real-time Debounced) -->
+        <div class="col-md-5">
+          <div class="input-group">
+            <span class="input-group-text bg-white text-secondary border-end-0">
+              <i class="bi bi-search"></i>
+            </span>
+            <input
+              type="text"
+              class="form-control border-start-0 ps-0"
+              placeholder="Search by name, serial number, brand, model or user..."
+              [ngModel]="searchTerm"
+              (ngModelChange)="onSearchInput($event)">
+            @if (searchTerm) {
+              <button class="btn btn-outline-secondary border-start-0 bg-white" type="button" (click)="clearFilters()" title="Clear search">
+                <i class="bi bi-x"></i>
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- Type Filter -->
+        <div class="col-md-3">
+          <select class="form-select" [(ngModel)]="selectedCategory" (change)="onFilterChange()">
+            <option value="">All Categories / Types</option>
+            @for (cat of categories; track cat.id) {
+              <option [value]="cat.code">{{ cat.name }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Status Filter -->
+        <div class="col-md-2">
+          <select class="form-select" [(ngModel)]="selectedStatus" (change)="onFilterChange()">
+            <option value="">All Statuses</option>
+            <option value="ACTIVE">Active</option>
+            <option value="IN_REPAIR">Under Maintenance</option>
+            <option value="RETIRED">Inactive</option>
+          </select>
+        </div>
+
+        <!-- Actions: Reset -->
+        <div class="col-md-2 d-flex gap-2">
+          <button class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2"
+                  (click)="clearFilters()"
+                  title="Clear All Filters">
+            <i class="bi bi-arrow-counterclockwise"></i> Clear
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Asset Table -->
+  <div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+        <tr>
+          <th>Serial Number</th>
+          <th>Asset Name</th>
+          <th>Brand</th>
+          <th>Model</th>
+          <th>Type</th>
+          <th>Assigned User</th>
+          <th>Department</th>
+          <th>Status</th>
+          <th class="text-end pe-4" style="width: 140px;">Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+          @if (isLoading) {
+            <tr>
+              <td colspan="9" class="text-center py-5 text-muted">
+                <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                Loading corporate assets...
+              </td>
+            </tr>
+          } @else {
+            @for (asset of assets; track asset.id) {
+              <tr>
+                <td class="fw-semibold font-monospace small text-primary">{{ asset.serialNumber }}</td>
+                <td class="fw-medium text-dark">{{ asset.name }}</td>
+                <td>{{ asset.brand || '—' }}</td>
+                <td>{{ asset.model || '—' }}</td>
+                <td>
+                  <span class="badge bg-light text-dark border">{{ getTypeLabel(asset.type) }}</span>
+                </td>
+                <td>
+                  @if (asset.assignedUsername) {
+                    <div class="d-flex align-items-center gap-2">
+                      <i class="bi bi-person-circle text-secondary"></i>
+                      <span>{{ asset.assignedUsername }}</span>
+                    </div>
+                  } @else {
+                    <span class="text-muted fst-italic small">Unassigned</span>
+                  }
+                </td>
+                <td>
+                  <span class="text-secondary small">{{ asset.departmentName || '—' }}</span>
+                </td>
+                <td>
+                  <span class="badge {{ getStatusBadgeClass(asset.status) }}">
+                    {{ getStatusLabel(asset.status) }}
+                  </span>
+                </td>
+                <td class="text-end pe-3">
+                  <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-secondary"
+                            (click)="openDetailModal(asset)"
+                            data-bs-toggle="modal"
+                            data-bs-target="#detailAssetModal"
+                            title="Show Details">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="btn btn-outline-primary"
+                            (click)="openEditModal(asset)"
+                            data-bs-toggle="modal"
+                            data-bs-target="#editAssetModal"
+                            title="Edit Asset">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    @if (authService.isAdmin()) {
+                      <button class="btn btn-outline-danger"
+                              (click)="deleteAsset(asset)"
+                              title="Delete Asset (Admin Only)">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="9" class="text-center py-5 text-muted">
+                  <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+                  No assets found matching your filters.
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination Footer -->
+    <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3">
+      <small class="text-muted">
+        Showing {{ assets.length }} of {{ totalElements }} assets
+      </small>
+      @if (totalPages > 1) {
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item" [class.disabled]="currentPage === 0">
+              <button class="page-link" (click)="goToPage(currentPage - 1)">
+                <i class="bi bi-chevron-left"></i>
+              </button>
+            </li>
+            @for (p of pages; track p) {
+              <li class="page-item" [class.active]="p === currentPage">
+                <button class="page-link" (click)="goToPage(p)">{{ p + 1 }}</button>
+              </li>
+            }
+            <li class="page-item" [class.disabled]="currentPage === totalPages - 1">
+              <button class="page-link" (click)="goToPage(currentPage + 1)">
+                <i class="bi bi-chevron-right"></i>
+              </button>
+            </li>
+          </ul>
+        </nav>
+      }
+    </div>
+  </div>
+</div>
+}
+
+<!-- ==================== MODAL 1: CREATE ASSET ==================== -->
+<div class="modal fade" id="createAssetModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">Add New Asset</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="createAsset()">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Asset Name <span class="text-danger">*</span></label>
+            <input type="text"
+                   class="form-control"
+                   [(ngModel)]="newAsset.name"
+                   name="name"
+                   required
+                   placeholder="e.g. MacBook Pro 16">
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Brand <span class="text-danger">*</span></label>
+              <input type="text"
+                     class="form-control"
+                     [(ngModel)]="newAsset.brand"
+                     name="brand"
+                     required
+                     placeholder="e.g. Apple">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Model <span class="text-danger">*</span></label>
+              <input type="text"
+                     class="form-control"
+                     [(ngModel)]="newAsset.model"
+                     name="model"
+                     required
+                     placeholder="e.g. M3 Max">
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Serial Number <span class="text-danger">*</span></label>
+              <input type="text"
+                     class="form-control"
+                     [(ngModel)]="newAsset.serialNumber"
+                     name="serialNumber"
+                     required
+                     placeholder="e.g. SN-98421">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Category / Type <span class="text-danger">*</span></label>
+              <select class="form-select" [(ngModel)]="newAsset.type" name="type" required>
+                <option value="" disabled>— Please Select —</option>
+                @for (cat of categories; track cat.id) {
+                  <option [value]="cat.code">{{ cat.name }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Operational Status <span class="text-danger">*</span></label>
+              <select class="form-select" [(ngModel)]="newAsset.status" name="status" required>
+                <option value="" disabled>— Please Select —</option>
+                <option value="ACTIVE">Active</option>
+                <option value="IN_REPAIR">Under Maintenance</option>
+                <option value="RETIRED">Inactive</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Department <span class="text-muted fw-normal">(optional)</span></label>
+              <select class="form-select" [(ngModel)]="newAsset.departmentId" name="departmentId">
+                <option [ngValue]="null">— None —</option>
+                @for (dept of departments; track dept.id) {
+                  <option [ngValue]="dept.id">{{ dept.name }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Assign Staff <span class="text-muted fw-normal">(optional)</span></label>
+            <select class="form-select" [(ngModel)]="newAsset.assignedUserId" name="assignedUserId">
+              <option [ngValue]="null">— Unassigned in Stock —</option>
+              @for (user of users; track user.id) {
+                <option [ngValue]="user.id">{{ user.firstName || user.lastName ? ((user.firstName || '') + ' ' + (user.lastName || '')).trim() : user.username }} ({{ user.username }})</option>
+              }
+            </select>
+          </div>
+
+          <div class="modal-footer px-0 pb-0 pt-3">
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit"
+                    class="btn btn-primary"
+                    data-bs-dismiss="modal"
+                    [disabled]="!newAsset.name.trim() || !newAsset.serialNumber.trim() || !newAsset.type || !newAsset.status">
+              Save Asset
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL 2: DETAIL MODAL ==================== -->
+<div class="modal fade" id="detailAssetModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    @if (selectedAsset) {
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header">
+          <div>
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle fs-6 font-monospace">{{ selectedAsset.serialNumber }}</span>
+              <h5 class="modal-title fw-bold m-0">{{ selectedAsset.name }}</h5>
+            </div>
+            <div class="mt-2 d-flex gap-2 align-items-center flex-wrap">
+              <span class="badge {{ getStatusBadgeClass(selectedAsset.status) }}">
+                {{ getStatusLabel(selectedAsset.status) }}
+              </span>
+              <span class="badge bg-light text-dark border">
+                {{ getTypeLabel(selectedAsset.type) }}
+              </span>
+              @if (selectedAsset.departmentName) {
+                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
+                  <i class="bi bi-diagram-3 me-1"></i>{{ selectedAsset.departmentName }}
+                </span>
+              }
+            </div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body pt-3">
+          <div class="card border-0 bg-light p-3 mb-0">
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <small class="text-secondary d-block">Brand & Model</small>
+                <span class="fw-semibold text-dark">
+                  <i class="bi bi-box-seam me-1 text-primary"></i>
+                  {{ selectedAsset.brand || '—' }} {{ selectedAsset.model ? ('(' + selectedAsset.model + ')') : '' }}
+                </span>
+              </div>
+              <div class="col-sm-6">
+                <small class="text-secondary d-block">Serial Number</small>
+                <span class="font-monospace text-dark">
+                  <i class="bi bi-upc me-1 text-secondary"></i>
+                  {{ selectedAsset.serialNumber }}
+                </span>
+              </div>
+              <div class="col-sm-6">
+                <small class="text-secondary d-block">Assigned User</small>
+                <span class="fw-semibold text-dark">
+                  <i class="bi bi-person-check me-1 text-success"></i>
+                  {{ selectedAsset.assignedUsername || 'Unassigned in Stock' }}
+                </span>
+              </div>
+              <div class="col-sm-6">
+                <small class="text-secondary d-block">Department</small>
+                <span class="text-dark">
+                  <i class="bi bi-building me-1 text-secondary"></i>
+                  {{ selectedAsset.departmentName || 'Not Assigned' }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer bg-light py-2">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- ==================== MODAL 3: EDIT ASSET ==================== -->
+<div class="modal fade" id="editAssetModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">Edit Asset</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="updateAsset()">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Asset Name <span class="text-danger">*</span></label>
+            <input type="text"
+                   class="form-control"
+                   [(ngModel)]="editAssetModel.name"
+                   name="editName"
+                   required>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Brand <span class="text-danger">*</span></label>
+              <input type="text"
+                     class="form-control"
+                     [(ngModel)]="editAssetModel.brand"
+                     name="editBrand"
+                     required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Model <span class="text-danger">*</span></label>
+              <input type="text"
+                     class="form-control"
+                     [(ngModel)]="editAssetModel.model"
+                     name="editModel"
+                     required>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Serial Number <span class="text-danger">*</span></label>
+              <input type="text"
+                     class="form-control"
+                     [(ngModel)]="editAssetModel.serialNumber"
+                     name="editSerialNumber"
+                     required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Category / Type <span class="text-danger">*</span></label>
+              <select class="form-select" [(ngModel)]="editAssetModel.type" name="editType" required>
+                @for (cat of categories; track cat.id) {
+                  <option [value]="cat.code">{{ cat.name }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Operational Status <span class="text-danger">*</span></label>
+              <select class="form-select" [(ngModel)]="editAssetModel.status" name="editStatus" required>
+                <option value="ACTIVE">Active</option>
+                <option value="IN_REPAIR">Under Maintenance</option>
+                <option value="RETIRED">Inactive</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Department <span class="text-muted fw-normal">(optional)</span></label>
+              <select class="form-select" [(ngModel)]="editAssetModel.departmentId" name="editDepartmentId">
+                <option [ngValue]="null">— None —</option>
+                @for (dept of departments; track dept.id) {
+                  <option [ngValue]="dept.id">{{ dept.name }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Assign Staff <span class="text-muted fw-normal">(optional)</span></label>
+            <select class="form-select" [(ngModel)]="editAssetModel.assignedUserId" name="editAssignedUserId">
+              <option [ngValue]="null">— Unassigned in Stock —</option>
+              @for (user of users; track user.id) {
+                <option [ngValue]="user.id">{{ user.firstName || user.lastName ? ((user.firstName || '') + ' ' + (user.lastName || '')).trim() : user.username }} ({{ user.username }})</option>
+              }
+            </select>
+          </div>
+
+          <div class="modal-footer px-0 pb-0 pt-3">
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit"
+                    class="btn btn-primary"
+                    data-bs-dismiss="modal"
+                    [disabled]="!editAssetModel.name.trim() || !editAssetModel.serialNumber.trim()">
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL 4: CATEGORY MANAGEMENT ==================== -->
+<div class="modal fade" id="categoryManagementModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-bottom">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-tags text-primary fs-5"></i>
+          <h5 class="modal-title fw-bold m-0">Asset Categories</h5>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body p-4">
+        <!-- Add / Edit Category Form Card -->
+        <div class="card border border-light-subtle bg-light mb-4">
+          <div class="card-body">
+            <h6 class="fw-bold mb-3 text-dark d-flex align-items-center gap-2">
+              <i class="bi {{ editingCategoryId ? 'bi-pencil-square text-warning' : 'bi-plus-circle text-primary' }}"></i>
+              {{ editingCategoryId ? 'Edit Category' : 'Add New Category' }}
+            </h6>
+            <form (ngSubmit)="saveCategory()">
+              <div class="row g-3">
+                <div class="col-md-5">
+                  <label class="form-label small fw-semibold">Category Name <span class="text-danger">*</span></label>
+                  <input type="text"
+                         class="form-control form-control-sm"
+                         placeholder="e.g. Tablet, Printer"
+                         [(ngModel)]="categoryForm.name"
+                         name="categoryName"
+                         required>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold">Code <span class="text-muted fw-normal">(optional)</span></label>
+                  <input type="text"
+                         class="form-control form-control-sm font-monospace text-uppercase"
+                         placeholder="e.g. TABLET"
+                         [(ngModel)]="categoryForm.code"
+                         name="categoryCode">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small fw-semibold">Description <span class="text-muted fw-normal">(optional)</span></label>
+                  <input type="text"
+                         class="form-control form-control-sm"
+                         placeholder="Short description"
+                         [(ngModel)]="categoryForm.description"
+                         name="categoryDescription">
+                </div>
+              </div>
+              <div class="d-flex justify-content-end gap-2 mt-3">
+                @if (editingCategoryId) {
+                  <button type="button" class="btn btn-secondary btn-sm" (click)="resetCategoryForm()">
+                    Cancel
+                  </button>
+                }
+                <button type="submit"
+                        class="btn btn-primary btn-sm d-flex align-items-center gap-1"
+                        [disabled]="!categoryForm.name.trim() || isSavingCategory">
+                  @if (isSavingCategory) {
+                    <span class="spinner-border spinner-border-sm" role="status"></span>
+                  } @else {
+                    <i class="bi {{ editingCategoryId ? 'bi-check-lg' : 'bi-plus-lg' }}"></i>
+                  }
+                  {{ editingCategoryId ? 'Update Category' : 'Save Category' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Categories List -->
+        <h6 class="fw-bold mb-2 text-dark">Existing Categories</h6>
+        <div class="table-responsive border rounded">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-3 py-2 text-secondary small fw-semibold">Category Name</th>
+                <th class="py-2 text-secondary small fw-semibold">Code</th>
+                <th class="py-2 text-secondary small fw-semibold">Description</th>
+                <th class="py-2 text-secondary small fw-semibold text-center">Assigned Assets</th>
+                <th class="pe-3 py-2 text-secondary small fw-semibold text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (isLoadingCategories) {
+                <tr>
+                  <td colspan="5" class="text-center py-4 text-muted">
+                    <span class="spinner-border spinner-border-sm me-2"></span> Loading categories...
+                  </td>
+                </tr>
+              } @else {
+                @for (cat of categories; track cat.id) {
+                  <tr [class.table-active]="editingCategoryId === cat.id">
+                    <td class="ps-3 fw-semibold text-dark">{{ cat.name }}</td>
+                    <td>
+                      <span class="badge bg-secondary-subtle text-secondary font-monospace border border-secondary-subtle">
+                        {{ cat.code }}
+                      </span>
+                    </td>
+                    <td class="text-muted small">{{ cat.description || '—' }}</td>
+                    <td class="text-center">
+                      <span class="badge {{ cat.assetCount > 0 ? 'bg-primary-subtle text-primary border border-primary-subtle' : 'bg-light text-muted border' }}">
+                        {{ cat.assetCount }} {{ cat.assetCount === 1 ? 'asset' : 'assets' }}
+                      </span>
+                    </td>
+                    <td class="pe-3 text-end">
+                      <div class="btn-group btn-group-sm">
+                        <button type="button"
+                                class="btn btn-outline-secondary"
+                                (click)="startEditCategory(cat)"
+                                title="Edit category">
+                          <i class="bi bi-pencil"></i>
+                        </button>
+                        <button type="button"
+                                class="btn btn-outline-danger"
+                                [disabled]="cat.assetCount > 0"
+                                [title]="cat.assetCount > 0 ? 'Cannot delete category with assigned assets' : 'Delete category'"
+                                (click)="deleteCategory(cat)">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="5" class="text-center py-4 text-muted">
+                      No categories found.
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer bg-light py-2">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

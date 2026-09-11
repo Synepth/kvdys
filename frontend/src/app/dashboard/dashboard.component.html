@@ -1,0 +1,470 @@
+@if (stats) {
+  <div class="container-fluid">
+
+    <!-- Page Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+      <div>
+        <h4 class="fw-bold m-0 text-dark">
+          {{ isSelfServiceUser() ? 'My Workspace Overview' : 'Dashboard Overview' }}
+        </h4>
+        <small class="text-secondary">
+          Welcome back, <span class="fw-semibold text-dark">{{ authService.username() || 'User' }}</span>!
+          {{ isSelfServiceUser() 
+              ? 'Here is the latest summary of your assigned equipment and support requests.' 
+              : 'Here is the latest summary of corporate assets and support requests.' }}
+        </small>
+      </div>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <a routerLink="/tickets" class="btn btn-primary d-flex align-items-center gap-2 shadow-sm">
+          <i class="bi bi-plus-lg"></i> {{ isSelfServiceUser() ? 'Submit Request' : 'New Request' }}
+        </a>
+        @if (!isSelfServiceUser()) {
+          <a routerLink="/assets" class="btn btn-outline-primary d-flex align-items-center gap-2">
+            <i class="bi bi-laptop"></i> Manage Assets
+          </a>
+        } @else {
+          <a routerLink="/assets" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+            <i class="bi bi-laptop"></i> My Equipment
+          </a>
+        }
+      </div>
+    </div>
+
+    <!-- Section 1: IT Asset / Equipment Metrics -->
+    <div class="mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="text-secondary text-uppercase fw-semibold" style="font-size: 0.75rem; letter-spacing: 0.05em;">
+          <i class="bi bi-laptop me-1"></i> {{ isSelfServiceUser() ? 'My Assigned Equipment' : 'Corporate Assets' }}
+        </span>
+        <a routerLink="/assets" class="small text-decoration-none fw-medium">
+          {{ isSelfServiceUser() ? 'View my equipment →' : 'View all assets →' }}
+        </a>
+      </div>
+
+      <div class="row g-3">
+        <!-- Card 1: Total Assets / Assigned Equipment -->
+        <div class="col-6 col-lg-3">
+          <div class="card border-0 shadow-sm h-100 rounded-3">
+            <div class="card-body p-3 d-flex align-items-center justify-content-between">
+              <div>
+                <span class="text-secondary small fw-medium d-block mb-1">
+                  {{ isSelfServiceUser() ? 'Assigned Equipment' : 'Total Assets' }}
+                </span>
+                <h3 class="fw-bold m-0 text-dark">{{ stats.totalAssets }}</h3>
+                <span class="text-muted small mt-1 d-block">
+                  {{ isSelfServiceUser() ? 'In your custody' : stats.assignedAssets + ' assigned' }}
+                </span>
+              </div>
+              <div class="bg-primary-subtle text-primary p-3 rounded-3">
+                <i class="bi {{ isSelfServiceUser() ? 'bi-laptop' : 'bi-box-seam' }} fs-4"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: Active Assets -->
+        <div class="col-6 col-lg-3">
+          <div class="card border-0 shadow-sm h-100 rounded-3">
+            <div class="card-body p-3 d-flex align-items-center justify-content-between">
+              <div>
+                <span class="text-secondary small fw-medium d-block mb-1">Operational</span>
+                <h3 class="fw-bold m-0 text-success">{{ stats.activeAssets }}</h3>
+                <span class="badge bg-success-subtle text-success border border-success-subtle mt-1">
+                  {{ getPercent(stats.activeAssets, stats.totalAssets) }}% operational
+                </span>
+              </div>
+              <div class="bg-success-subtle text-success p-3 rounded-3">
+                <i class="bi bi-check-circle fs-4"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: In Repair -->
+        <div class="col-6 col-lg-3">
+          <div class="card border-0 shadow-sm h-100 rounded-3">
+            <div class="card-body p-3 d-flex align-items-center justify-content-between">
+              <div>
+                <span class="text-secondary small fw-medium d-block mb-1">In Repair</span>
+                <h3 class="fw-bold m-0 text-warning-emphasis">{{ stats.inRepairAssets }}</h3>
+                <span class="text-muted small mt-1 d-block">Under maintenance</span>
+              </div>
+              <div class="bg-warning-subtle text-warning-emphasis p-3 rounded-3">
+                <i class="bi bi-tools fs-4"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 4: Unassigned (Admin) OR Health Status (Self-Service) -->
+        <div class="col-6 col-lg-3">
+          <div class="card border-0 shadow-sm h-100 rounded-3">
+            <div class="card-body p-3 d-flex align-items-center justify-content-between">
+              @if (!isSelfServiceUser()) {
+                <div>
+                  <span class="text-secondary small fw-medium d-block mb-1">Unassigned</span>
+                  <h3 class="fw-bold m-0 text-secondary">{{ stats.unassignedAssets }}</h3>
+                  <span class="text-muted small mt-1 d-block">Available in stock</span>
+                </div>
+                <div class="bg-secondary-subtle text-secondary p-3 rounded-3">
+                  <i class="bi bi-archive fs-4"></i>
+                </div>
+              } @else {
+                <div>
+                  <span class="text-secondary small fw-medium d-block mb-1">Health Status</span>
+                  @if (stats.totalAssets === 0) {
+                    <h5 class="fw-bold m-0 text-muted mt-1">No Hardware</h5>
+                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle mt-1">None Assigned</span>
+                  } @else if (stats.inRepairAssets === 0) {
+                    <h5 class="fw-bold m-0 text-success mt-1">100% Healthy</h5>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle mt-1">All Functional</span>
+                  } @else {
+                    <h5 class="fw-bold m-0 text-warning-emphasis mt-1">Maintenance</h5>
+                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle mt-1">Needs Attention</span>
+                  }
+                </div>
+                <div class="bg-info-subtle text-info-emphasis p-3 rounded-3">
+                  <i class="bi bi-shield-check fs-4"></i>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Support Ticket Metrics -->
+    <div class="mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="text-secondary text-uppercase fw-semibold" style="font-size: 0.75rem; letter-spacing: 0.05em;">
+          <i class="bi bi-ticket-detailed me-1"></i> {{ isSelfServiceUser() ? 'My Support Requests' : 'Support Requests' }}
+        </span>
+        <a routerLink="/tickets" class="small text-decoration-none fw-medium">
+          {{ isSelfServiceUser() ? 'View all my requests →' : 'View all tickets →' }}
+        </a>
+      </div>
+
+      <div class="row g-3">
+        <!-- Card 1: Total Tickets -->
+        <div class="col-6 col-lg-3">
+          <div class="card border-0 shadow-sm h-100 rounded-3">
+            <div class="card-body p-3 d-flex align-items-center justify-content-between">
+              <div>
+                <span class="text-secondary small fw-medium d-block mb-1">
+                  {{ isSelfServiceUser() ? 'My Requests' : 'Total Requests' }}
+                </span>
+                <h3 class="fw-bold m-0 text-dark">{{ stats.totalTickets ?? 0 }}</h3>
+                <span class="text-muted small mt-1 d-block">
+                  {{ isSelfServiceUser() ? 'Submitted by you' : 'All time' }}
+                </span>
+              </div>
+              <div class="bg-primary-subtle text-primary p-3 rounded-3">
+                <i class="bi bi-life-preserver fs-4"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: Open Requests -->
+        <div class="col-6 col-lg-3">
+          <div class="card border-0 shadow-sm h-100 rounded-3">
+            <div class="card-body p-3 d-flex align-items-center justify-content-between">
+              <div>
+                <span class="text-secondary small fw-medium d-block mb-1">Open</span>
+                <h3 class="fw-bold m-0 text-danger">{{ stats.openTickets ?? 0 }}</h3>
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle mt-1">
+                  {{ isSelfServiceUser() ? 'In queue' : 'Needs attention' }}
+                </span>
+              </div>
+              <div class="bg-danger-subtle text-danger p-3 rounded-3">
+                <i class="bi bi-exclamation-circle fs-4"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: In Review -->
+        <div class="col-6 col-lg-3">
+          <div class="card border-0 shadow-sm h-100 rounded-3">
+            <div class="card-body p-3 d-flex align-items-center justify-content-between">
+              <div>
+                <span class="text-secondary small fw-medium d-block mb-1">In Review</span>
+                <h3 class="fw-bold m-0 text-info-emphasis">{{ stats.inReviewTickets ?? 0 }}</h3>
+                <span class="text-muted small mt-1 d-block">In progress</span>
+              </div>
+              <div class="bg-info-subtle text-info-emphasis p-3 rounded-3">
+                <i class="bi bi-hourglass-split fs-4"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 4: Resolved -->
+        <div class="col-6 col-lg-3">
+          <div class="card border-0 shadow-sm h-100 rounded-3">
+            <div class="card-body p-3 d-flex align-items-center justify-content-between">
+              <div>
+                <span class="text-secondary small fw-medium d-block mb-1">Resolved</span>
+                <h3 class="fw-bold m-0 text-success">{{ stats.resolvedTickets ?? 0 }}</h3>
+                <span class="badge bg-success-subtle text-success border border-success-subtle mt-1">
+                  {{ getPercent(stats.resolvedTickets ?? 0, stats.totalTickets ?? 0) }}% resolved
+                </span>
+              </div>
+              <div class="bg-success-subtle text-success p-3 rounded-3">
+                <i class="bi bi-check2-circle fs-4"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Tables & Breakdowns (Unified Grid: col-lg-7 and col-lg-5) -->
+    <div class="row g-3">
+      <!-- Left Column (col-lg-7): Equipment Table -->
+      <div class="col-lg-7">
+        <div class="card border-0 shadow-sm rounded-3 h-100">
+          <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="fw-bold m-0 text-dark">
+                {{ isSelfServiceUser() ? 'My Assigned Equipment' : 'Recently Added Assets' }}
+              </h6>
+              <small class="text-muted">
+                {{ isSelfServiceUser() ? 'Hardware currently in your custody' : 'Latest 5 items registered in catalog' }}
+              </small>
+            </div>
+            <a routerLink="/assets" class="btn btn-outline-primary btn-sm">
+              {{ isSelfServiceUser() ? 'View My Assets' : 'View All Assets' }}
+            </a>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Serial No</th>
+                    <th>Asset Name</th>
+                    <th>Category</th>
+                    @if (!isSelfServiceUser()) {
+                      <th>Assigned To</th>
+                    }
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (asset of recentAssets; track asset.id) {
+                    <tr>
+                      <td class="fw-semibold font-monospace small text-primary">{{ asset.serialNumber }}</td>
+                      <td>
+                        <div class="fw-medium text-dark">{{ asset.name }}</div>
+                        <small class="text-muted">{{ asset.brand || '' }} {{ asset.model || '' }}</small>
+                      </td>
+                      <td>
+                        <span class="badge bg-light text-dark border">{{ asset.type }}</span>
+                      </td>
+                      @if (!isSelfServiceUser()) {
+                        <td>
+                          @if (asset.assignedUsername) {
+                            <span class="d-flex align-items-center gap-1 small">
+                              <i class="bi bi-person-circle text-secondary"></i>
+                              {{ asset.assignedUsername }}
+                            </span>
+                          } @else {
+                            <span class="text-muted fst-italic small">Unassigned</span>
+                          }
+                        </td>
+                      }
+                      <td>
+                        <span class="badge {{ getAssetStatusBadge(asset.status) }}">
+                          {{ getAssetStatusLabel(asset.status) }}
+                        </span>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td [attr.colspan]="isSelfServiceUser() ? 4 : 5" class="text-center py-5 text-muted">
+                        <i class="bi bi-laptop fs-2 d-block mb-2 text-secondary opacity-50"></i>
+                        {{ isSelfServiceUser() ? 'No equipment currently assigned to your account.' : 'No assets registered yet.' }}
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column (col-lg-5): Support Requests (Self-Service) OR System Distribution (Admin) -->
+      <div class="col-lg-5">
+        @if (isSelfServiceUser()) {
+          <!-- Self-Service: Recent Support Requests Card -->
+          <div class="card border-0 shadow-sm rounded-3 h-100">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+              <div>
+                <h6 class="fw-bold m-0 text-dark">My Recent Requests</h6>
+                <small class="text-muted">Tickets submitted by your account</small>
+              </div>
+              <a routerLink="/tickets" class="btn btn-outline-primary btn-sm">View All</a>
+            </div>
+            <div class="card-body p-0">
+              @if (recentTickets.length > 0) {
+                <div class="table-responsive">
+                  <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Req #</th>
+                        <th>Subject</th>
+                        <th>Status</th>
+                        <th class="text-end pe-3">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (ticket of recentTickets; track ticket.id) {
+                        <tr>
+                          <td class="fw-semibold text-primary">#{{ ticket.id }}</td>
+                          <td>
+                            <div class="text-truncate fw-medium text-dark" style="max-width: 170px;" [title]="ticket.title">
+                              {{ ticket.title }}
+                            </div>
+                            <small class="text-muted">{{ ticket.category }}</small>
+                          </td>
+                          <td>
+                            <span class="badge {{ getTicketStatusBadge(ticket.status) }}">{{ ticket.status }}</span>
+                          </td>
+                          <td class="text-end pe-3">
+                            <a [routerLink]="['/tickets']" [queryParams]="{ id: ticket.id }" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Open Ticket">
+                              <i class="bi bi-arrow-right"></i>
+                            </a>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              } @else {
+                <div class="text-center py-5 text-muted p-4">
+                  <i class="bi bi-check2-circle fs-1 text-success opacity-50 d-block mb-2"></i>
+                  <h6 class="fw-semibold text-dark mb-1">No Active Requests</h6>
+                  <p class="small text-muted mb-3">Facing an issue with your device or software?</p>
+                  <a routerLink="/tickets" class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus-lg me-1"></i> Submit a Ticket
+                  </a>
+                </div>
+              }
+            </div>
+          </div>
+        } @else {
+          <!-- Admin: System Distribution & Health -->
+          <div class="card border-0 shadow-sm rounded-3 h-100">
+            <div class="card-header bg-white border-bottom py-3">
+              <h6 class="fw-bold m-0 text-dark">System Distribution & Health</h6>
+              <small class="text-muted">Operational breakdown of inventory and support</small>
+            </div>
+            <div class="card-body p-4">
+
+              <!-- Asset Operational Status -->
+              <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="small fw-semibold text-secondary">Asset Operational Health</span>
+                  <span class="small fw-bold text-success">{{ getPercent(stats.activeAssets, stats.totalAssets) }}% Active</span>
+                </div>
+                <div class="progress" style="height: 10px;">
+                  <div class="progress-bar bg-success"
+                       role="progressbar"
+                       [style.width.%]="getPercent(stats.activeAssets, stats.totalAssets)"
+                       title="Active: {{ stats.activeAssets }}"></div>
+                  <div class="progress-bar bg-warning"
+                       role="progressbar"
+                       [style.width.%]="getPercent(stats.inRepairAssets, stats.totalAssets)"
+                       title="In Repair: {{ stats.inRepairAssets }}"></div>
+                  <div class="progress-bar bg-secondary"
+                       role="progressbar"
+                       [style.width.%]="getPercent(stats.retiredAssets, stats.totalAssets)"
+                       title="Retired: {{ stats.retiredAssets }}"></div>
+                </div>
+                <div class="d-flex justify-content-between mt-2 text-muted" style="font-size: 0.75rem;">
+                  <span><i class="bi bi-circle-fill text-success me-1"></i>Active ({{ stats.activeAssets }})</span>
+                  <span><i class="bi bi-circle-fill text-warning me-1"></i>Repair ({{ stats.inRepairAssets }})</span>
+                  <span><i class="bi bi-circle-fill text-secondary me-1"></i>Retired ({{ stats.retiredAssets }})</span>
+                </div>
+              </div>
+
+              <!-- Ticket Resolution Rate -->
+              <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="small fw-semibold text-secondary">Support Resolution Rate</span>
+                  <span class="small fw-bold text-primary">{{ getPercent(stats.resolvedTickets ?? 0, stats.totalTickets ?? 0) }}% Resolved</span>
+                </div>
+                <div class="progress" style="height: 10px;">
+                  <div class="progress-bar bg-success"
+                       role="progressbar"
+                       [style.width.%]="getPercent(stats.resolvedTickets ?? 0, stats.totalTickets ?? 0)"></div>
+                  <div class="progress-bar bg-info"
+                       role="progressbar"
+                       [style.width.%]="getPercent(stats.inReviewTickets ?? 0, stats.totalTickets ?? 0)"></div>
+                  <div class="progress-bar bg-danger"
+                       role="progressbar"
+                       [style.width.%]="getPercent(stats.openTickets ?? 0, stats.totalTickets ?? 0)"></div>
+                </div>
+                <div class="d-flex justify-content-between mt-2 text-muted" style="font-size: 0.75rem;">
+                  <span><i class="bi bi-circle-fill text-success me-1"></i>Resolved ({{ stats.resolvedTickets ?? 0 }})</span>
+                  <span><i class="bi bi-circle-fill text-info me-1"></i>In Review ({{ stats.inReviewTickets ?? 0 }})</span>
+                  <span><i class="bi bi-circle-fill text-danger me-1"></i>Open ({{ stats.openTickets ?? 0 }})</span>
+                </div>
+              </div>
+
+              <hr class="text-muted opacity-25 my-3">
+
+              <!-- Quick Allocation Stats -->
+              <div class="d-flex justify-content-between align-items-center py-1">
+                <span class="text-secondary small">
+                  <i class="bi bi-person-check text-primary me-1"></i> Assigned to Staff
+                </span>
+                <strong class="text-dark small">{{ stats.assignedAssets }} / {{ stats.totalAssets }}</strong>
+              </div>
+
+              <div class="d-flex justify-content-between align-items-center py-1">
+                <span class="text-secondary small">
+                  <i class="bi bi-archive text-secondary me-1"></i> Unassigned in Stock
+                </span>
+                <strong class="text-dark small">{{ stats.unassignedAssets }}</strong>
+              </div>
+
+              <div class="d-flex justify-content-between align-items-center py-1">
+                <span class="text-secondary small">
+                  <i class="bi bi-exclamation-triangle text-danger me-1"></i> Active Support Incidents
+                </span>
+                <strong class="text-danger small">{{ (stats.openTickets ?? 0) + (stats.inReviewTickets ?? 0) }}</strong>
+              </div>
+
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+  </div>
+} @else if (error) {
+  <!-- Error state -->
+  <div class="container-fluid">
+    <div class="row g-3 my-3">
+      <div class="col-12 text-center py-5">
+        <div class="alert alert-danger d-inline-block shadow-sm rounded-3" role="alert">
+          <i class="bi bi-exclamation-triangle me-2"></i>{{ error }}
+          <br><small class="text-muted">Make sure the backend is running and your token is valid.</small>
+        </div>
+      </div>
+    </div>
+  </div>
+} @else {
+  <!-- Loading state -->
+  <div class="container-fluid">
+    <div class="row g-3 my-3">
+      <div class="col-12 text-center text-muted py-5">
+        <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+        Loading dashboard metrics...
+      </div>
+    </div>
+  </div>
+}

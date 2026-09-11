@@ -1,0 +1,137 @@
+<div class="login-page-container d-flex align-items-center justify-content-center min-vh-100 bg-body-tertiary p-3">
+  <div class="card border-0 shadow-sm login-card" style="width: 100%; max-width: 420px;">
+    
+    <!-- Top Accent Bar -->
+    <div class="bg-primary rounded-top" style="height: 5px;"></div>
+
+    <div class="card-body p-4 p-sm-5">
+      
+      <!-- Brand Header -->
+      <div class="text-center mb-4">
+        <div class="d-inline-flex align-items-center gap-2 mb-2">
+          <span class="fs-3 fw-bold text-primary tracking-wide">KVDYS</span>
+          <span class="badge bg-primary fs-7">V1.0</span>
+        </div>
+        <h5 class="fw-bold text-dark mb-1">Sign In</h5>
+        <p class="text-secondary small mb-0">Enterprise Asset & Support Management System</p>
+      </div>
+
+      <!-- Error Alert -->
+      @if (errorMessage) {
+        <div class="alert alert-danger d-flex align-items-center gap-2 py-2 px-3 small mb-3 border-0 shadow-sm" role="alert">
+          <i class="bi bi-exclamation-circle-fill fs-6 flex-shrink-0"></i>
+          <div>{{ errorMessage }}</div>
+        </div>
+      }
+
+      <!-- Form -->
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
+        
+        <!-- Username Field -->
+        <div class="mb-3">
+          <label class="form-label small fw-semibold text-secondary" for="username">
+            Username
+          </label>
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0 text-muted">
+              <i class="bi bi-person"></i>
+            </span>
+            <input
+              id="username"
+              type="text"
+              class="form-control border-start-0 ps-0"
+              placeholder="Enter your username"
+              formControlName="username"
+              [class.is-invalid]="loginForm.get('username')?.touched && loginForm.get('username')?.invalid"
+              autocomplete="username"
+            />
+          </div>
+          @if (loginForm.get('username')?.touched && loginForm.get('username')?.hasError('required')) {
+            <div class="text-danger small mt-1">Username is required.</div>
+          } @else if (loginForm.get('username')?.touched && loginForm.get('username')?.hasError('minlength')) {
+            <div class="text-danger small mt-1">Username must be at least 3 characters.</div>
+          }
+        </div>
+
+        <!-- Password Field -->
+        <div class="mb-3">
+          <label class="form-label small fw-semibold text-secondary" for="password">
+            Password
+          </label>
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0 text-muted">
+              <i class="bi bi-lock"></i>
+            </span>
+            <input
+              id="password"
+              [type]="showPassword ? 'text' : 'password'"
+              class="form-control border-start-0 border-end-0 ps-0"
+              placeholder="Enter your password"
+              formControlName="password"
+              [class.is-invalid]="loginForm.get('password')?.touched && loginForm.get('password')?.invalid"
+              autocomplete="current-password"
+            />
+            <button
+              class="btn btn-outline-secondary border-start-0"
+              type="button"
+              (click)="togglePasswordVisibility()"
+              tabindex="-1"
+              title="Show / Hide Password"
+            >
+              <i class="bi" [ngClass]="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+            </button>
+          </div>
+          @if (loginForm.get('password')?.touched && loginForm.get('password')?.hasError('required')) {
+            <div class="text-danger small mt-1">Password is required.</div>
+          } @else if (loginForm.get('password')?.touched && loginForm.get('password')?.hasError('minlength')) {
+            <div class="text-danger small mt-1">Password must be at least 4 characters.</div>
+          }
+        </div>
+
+        <!-- Remember Me Checkbox -->
+        <div class="d-flex align-items-center justify-content-between mb-4">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="rememberMe" formControlName="rememberMe">
+            <label class="form-check-label small text-secondary" for="rememberMe">
+              Remember Me
+            </label>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button
+          type="submit"
+          class="btn btn-primary w-100 py-2 fw-semibold d-flex align-items-center justify-content-center gap-2 shadow-sm"
+          [disabled]="loginForm.invalid || isSubmitting"
+        >
+          @if (isSubmitting) {
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            <span>Signing in...</span>
+          } @else {
+            <i class="bi bi-box-arrow-in-right fs-5"></i>
+            <span>Sign In</span>
+          }
+        </button>
+
+      </form>
+
+      <!-- Demo Hint Box -->
+      <div class="mt-4 p-3 bg-light rounded-3 border text-center">
+        <small class="text-muted d-block">
+          <i class="bi bi-info-circle me-1"></i> Default Credentials:
+        </small>
+        <small class="text-secondary fw-semibold">
+          admin / password
+        </small>
+      </div>
+
+    </div>
+
+    <!-- Footer Copyright -->
+    <div class="card-footer bg-light border-0 py-3 text-center rounded-bottom">
+      <small class="text-muted">© 2026 KVDYS &bull; Synepth</small>
+    </div>
+
+  </div>
+</div>
+

@@ -31,3 +31,22 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# IDE / Editor Files
+.idea/
+*.iml
+.DS_Store
+
+# Maven Build
+**/target/
+*.class
+
+# Log Files
+*.log
+
+# Uploaded Files
+**/uploads/
+
+# AI Guidelines
+GEMINI.md
+gemini.md

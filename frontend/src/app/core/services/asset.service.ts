@@ -1,0 +1,59 @@
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { AssetCreateRequest, AssetPage, AssetResponse } from '../../models/asset';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class AssetService {
+  private apiUrl = 'http://localhost:8080/api/v1/assets';
+
+  constructor(private http: HttpClient) {}
+
+  getAllAssets(
+    page = 0,
+    size = 10,
+    search = '',
+    status = '',
+    category = ''
+  ): Observable<AssetPage> {
+    let params = new HttpParams()
+      .set('page', page)
+      .set('size', size);
+
+    if (search)   params = params.set('search', search);
+    if (status)   params = params.set('status', status);
+    if (category) params = params.set('category', category);
+
+    return this.http.get<AssetPage>(this.apiUrl, { params });
+  }
+
+  exportAssetsCsv(
+    search = '',
+    status = '',
+    category = ''
+  ): Observable<Blob> {
+    let params = new HttpParams();
+    if (search)   params = params.set('search', search);
+    if (status)   params = params.set('status', status);
+    if (category) params = params.set('category', category);
+
+    return this.http.get(`${this.apiUrl}/export/csv`, {
+      params,
+      responseType: 'blob'
+    });
+  }
+
+  createAsset(request: AssetCreateRequest): Observable<AssetResponse> {
+    return this.http.post<AssetResponse>(this.apiUrl, request);
+  }
+
+  updateAsset(id: number, request: AssetCreateRequest): Observable<AssetResponse> {
+    return this.http.put<AssetResponse>(`${this.apiUrl}/${id}`, request);
+  }
+
+  deleteAsset(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+}

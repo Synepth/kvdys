@@ -1,0 +1,16 @@
+package com.synepth.kvdys.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class AssetCategoryResponse {
+    private Long id;
+    private String name;
+    private String code;
+    private String description;
+    private long assetCount;
+}
